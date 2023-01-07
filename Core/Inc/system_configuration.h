@@ -10,19 +10,20 @@ extern float * probe; // debugging probes
 
 #include "persistent_data.h"
 
-#define RUN_DATA_LOGGER		1
+#define RUN_DATA_LOGGER			1
 
 #define PARALLEL_MAGNETIC_AHRS		0 // run second AHRS without SAT compass usage
-#define INCLUDING_NANO		1
+#define INCLUDING_NANO			1
 
-#define WRITE_MAG_CALIB_EEPROM		1
+#define WRITE_MAG_CALIB_EEPROM		0
 #define LOG_MAGNETIC_CALIBRATION 	1
 #define WRITE_EEPROM_DEFAULTS		0
 #define USE_HARDWARE_EEPROM		1
 #define WITH_DENSITY_DATA		1
-#define GNSS_VERTICAL_SPEED_INVERTED	0 // for simulation with old data
+#define WITH_LOWCOST_SENSORS		1
+#define USE_LARUS_NMEA_EXTENSIONS	1
 
-#define DKCOM 				0
+#define GNSS_VERTICAL_SPEED_INVERTED	0 // for simulation with old data
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -30,24 +31,15 @@ extern float * probe; // debugging probes
 #define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
 #define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
-#if DKCOM == 1 // *******************************************************************
+#define BLUETOOTH_NAME		"AT+NAMELarusMK1"
+#define ACTIVATE_USB_NMEA	1
 
-#define BLUETOOTH_NAME		"AT+NAMED-KCOM"
-#define ACTIVATE_USB_NMEA	0
-
-#else // **************************************************************************
-
-#define BLUETOOTH_NAME		"AT+NAMEALBATROS2"
-#define ACTIVATE_USB_NMEA	0
-
-#endif // **************************************************************************
-
-#define RUN_GNSS		1
-#define RUN_MTi_1_MODULE 	1
-#define RUN_MS5611_MODULE 	1
-#define RUN_L3GD20 		1
-#define RUN_FXOS8700		1
-#define RUN_PITOT_MODULE 	1
+#define RUN_GNSS		0
+#define RUN_MTi_1_MODULE 	0
+#define RUN_MS5611_MODULE 	0
+#define RUN_L3GD20 		0
+#define RUN_FXOS8700		0
+#define RUN_PITOT_MODULE 	0
 
 #define RUN_CAN_TESTER		0
 #define TEST_EEPROM		0
@@ -87,7 +79,7 @@ extern float * probe; // debugging probes
 
 #define ACTIVATE_FPU_EXCEPTION_TRAP 0 // todo I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
-#define ACTIVATE_WATCHDOG	1
+#define ACTIVATE_WATCHDOG	0
 #define WATCHDOG_STATISTICS 	0
 
 enum

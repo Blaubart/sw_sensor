@@ -21,22 +21,25 @@
 
 extern "C" void sync_logger (void);
 
-COMMON Semaphore setup_file_handling_completed;
+COMMON Semaphore SD_card_to_communicator_synchronizer;
+COMMON bool replaying_data=false;
+COMMON Semaphore new_data_read;
 
 COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
+COMMON Queue < observations_type> input(2);
 
 extern RestrictedTask NMEA_task;
 
 static ROM bool TRUE=true;
-static ROM bool FALSE=true;
+static ROM bool FALSE=false;
 
 void communicator_runnable (void*)
 {
   organizer_t organizer;
 
   // wait until configuration file read
-  setup_file_handling_completed.wait();
+  SD_card_to_communicator_synchronizer.wait();
 
   organizer.initialize_before_measurement();
 
@@ -58,6 +61,25 @@ void communicator_runnable (void*)
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 
   GNSS.coordinates.sat_fix_type = SAT_FIX_NONE; // just to be sure
+
+  int decimation_counter = 10;
+  while (true)
+    {
+      SD_card_to_communicator_synchronizer.wait ();
+
+      organizer.on_new_pressure_data (output_data); // todo check this update rate
+      organizer.update_every_10ms (output_data);
+
+      --decimation_counter;
+      if( decimation_counter ==0)
+	{
+	  decimation_counter = 10;
+	  organizer.update_GNSS_data (output_data.c);
+	  organizer.update_every_100ms (output_data);
+	}
+
+      organizer.report_data ( output_data);
+    }
 
   switch (GNSS_configuration)
     {

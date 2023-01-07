@@ -30,7 +30,7 @@ void bluetooth_hm_11(void*)
 
       delay(1000);
 
-      while(UART6_Receive(&rxData) == true)
+      while(UART6_Receive(&rxData, INFINITE_WAIT) == true)
 	{
 
 	}
@@ -158,12 +158,13 @@ bool Bluetooth_Cmd(const uint8_t *cmd)
 /* \r\n not required. "AT Command are fixed length commands and new line is this redundant. "HowToUse Hm-1x.pdf
  * This can not be true especially for setting a custom NAME?*/
 ROM uint8_t baudratecmd[] = "AT+BAUD7";  /* Change to 115200 baud  HM.19*/
-ROM uint8_t setName[] = "AT+NAMEMIKE"; //BLUETOOTH_NAME;
+ROM uint8_t setName[] = "AT+NAMELarusMK1"; //BLUETOOTH_NAME;
 ROM uint8_t NO_PIN[] = "AT+ADTY?";
 ROM uint8_t RELI_MODE[] = "AT+RELI1";
 ROM uint8_t interruptModule[] = "AT";
 ROM uint8_t resetModule[] = "AT+RESET";
 ROM uint8_t factory_resetModule[] = "AT+RENEW";
+ROM uint8_t set_mode_0[] = "AT+MODE0\r\n";
 //static uint8_t getpowercmd[] = "AT+POWE?\r\n";
 //static uint8_t desirecmode[] = "AT+MODE0\r\n";   //AT- configure prior connection, transparent uart after connection
 //static uint8_t disableConnecting[] = "AT+IMME1";  /* Disable automatic connection*/
@@ -189,7 +190,21 @@ bool Bluetooth_Init(void)
   UART6_DeInit(); /* Stop driving TX line.*/
   UART6_Init();  /* Stop here and connect external UART adapter for debugging.*/
 
-#if BT_CONFIGURE
+#if 1 // BT_FACTORY_RESET
+  UART6_ChangeBaudRate(9600);
+  if( false == Bluetooth_Cmd(interruptModule))
+    UART6_ChangeBaudRate(115200);
+
+  response=Bluetooth_Cmd(interruptModule);
+  response=Bluetooth_Cmd(factory_resetModule);
+  response=Bluetooth_Cmd(setName);
+//  response=Bluetooth_Cmd(set_mode_0);
+//  response=Bluetooth_Cmd(NO_PIN);
+  response=Bluetooth_Cmd(baudratecmd);
+  response=Bluetooth_Cmd(resetModule);
+#endif
+
+#if 0 // BT_CONFIGURE
   /*First try to recognize used baudrate*/
   delay(500); /*Let module wake up after reset*/
   UART6_ChangeBaudRate(9600);
@@ -198,7 +213,7 @@ bool Bluetooth_Init(void)
       /*Modules uses Baudrate 9600, and thus has never configured before!*/
 //      response=Bluetooth_Cmd(factory_resetModule);
       response=Bluetooth_Cmd(setName);
-//      response=Bluetooth_Cmd(NO_PIN);
+      response=Bluetooth_Cmd(NO_PIN);
 //      response=Bluetooth_Cmd(RELI_MODE);
       response=Bluetooth_Cmd(baudratecmd);
       response=Bluetooth_Cmd(resetModule);
@@ -206,19 +221,10 @@ bool Bluetooth_Init(void)
   delay(500);
 #endif
 
-  UART6_ChangeBaudRate(115200);
-  //  if(true == Bluetooth_Cmd(interruptModule))
-    {
-#if 0
-      response=Bluetooth_Cmd(interruptModule);
-      response=Bluetooth_Cmd(factory_resetModule);
-      response=Bluetooth_Cmd(setName);
-      response=Bluetooth_Cmd(baudratecmd);
-#endif
+      UART6_ChangeBaudRate(115200);
       response=Bluetooth_Cmd(resetModule);
       /*Seems that bluetooth modules is configured and answers at 115200 baud.*/
       update_system_state_set(BLUEZ_OUTPUT_ACTIVE);
-    }
 
   delay(500); /*Delay after last AT command.*/
   return true;

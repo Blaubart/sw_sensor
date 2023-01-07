@@ -9,6 +9,7 @@
 #include "read_configuration_file.h"
 #include "persistent_data.h"
 #include "stdlib.h"
+#include "data_structures.h"
 
 #define TEST_MODULE 0
 
@@ -82,9 +83,9 @@ unsigned write_EEPROM_value_dummy( EEPROM_PARAMETER_ID identifier, float value)
 }
 #endif
 
-void read_configuration_file(void)
+void read_configuration_file( char *filename, bool skip_2_lines)
 {
-  ASCII_file_reader file_reader((char *)"sensor_config.txt");
+  ASCII_file_reader file_reader(filename);
   if( file_reader.is_eof())
     return;
 
@@ -95,6 +96,12 @@ void read_configuration_file(void)
   status = EEPROM_initialize();
   ASSERT( ! status);
 #endif
+
+  if( skip_2_lines)
+    {
+      file_reader.read_line( linebuffer);
+      file_reader.read_line( linebuffer);
+    }
 
   // get and program all readable configuration lines
   while( file_reader.read_line( linebuffer))

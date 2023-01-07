@@ -1,5 +1,6 @@
 #include "system_configuration.h"
 #include "compass_calibration.h"
+#include "my_assert.h"
 
 //! helper function, in use until manual configuration is implemented
 void write_EEPROM_defaults( void)

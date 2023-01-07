@@ -16,7 +16,8 @@
 #include "read_configuration_file.h"
 #include "communicator.h"
 
-extern Semaphore setup_file_handling_completed;
+extern Semaphore SD_card_to_communicator_synchronizer;
+extern bool replaying_data;
 extern uint32_t UNIQUE_ID[4];
 
 COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4);
@@ -44,6 +45,60 @@ extern uint32_t Bad_Instruction_Address;
 extern uint32_t FPU_StatusControlRegister;
 extern uint16_t Usage_Fault_Status_Register;
 extern uint32_t Hard_Fault_Status;
+
+inline char * newline( char * next)
+{
+  *next++ = '\r';
+  *next++ = '\n';
+  return next;
+}
+
+class flight_data_reader
+  {
+  public:
+    flight_data_reader( const char * filename)
+       : file_is_open(false)
+    {
+      FRESULT fresult;
+      fresult = f_open(&infile, filename, FA_READ);
+      if( fresult != FR_OK)
+        return;
+
+      file_is_open=true;
+    }
+
+//! @return true if next record has been read
+  bool read_record( observations_type *target)
+  {
+    if( ! file_is_open)
+      return false;
+
+    UINT bytesread;
+    FRESULT fresult;
+    fresult = f_read(&infile, target, sizeof( observations_type), &bytesread);
+    if( (fresult != FR_OK) || (bytesread != sizeof( observations_type)))
+      {
+	f_close( &infile);
+	return false;
+      }
+    return true;
+  }
+  bool is_open( void)
+  {
+    return file_is_open;
+  }
+  void close( void)
+  {
+    if( file_is_open)
+      {
+	FRESULT fresult;
+	fresult = f_close( &infile);
+      }
+  }
+private:
+  FIL infile;
+  bool file_is_open;
+};
 
 void write_crash_dump( void)
 {
@@ -73,42 +128,33 @@ void write_crash_dump( void)
   next = buffer;
   *next++=' ';
   next = my_itoa( next, crashline);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
 
   next = lutox( crashdata, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
   next = utox( Bus_Fault_Address, buffer);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
 
   next = utox( Bad_Memory_Address, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
 
   next = utox( Memory_Fault_status, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
 
   next = utox( Bad_Instruction_Address, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
   next = utox( FPU_StatusControlRegister, buffer);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
 
   next = utox( Usage_Fault_Status_Register, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
 
   next = utox( Hard_Fault_Status, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=newline(next);
 
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
@@ -238,13 +284,32 @@ data_logger_runnable (void*)
 
   if (fresult != FR_OK)
     {
-      setup_file_handling_completed.signal();
+      SD_card_to_communicator_synchronizer.signal();
       while(true)
 	suspend (); // give up, logger can not work
     }
 
+  ASSERT( sizeof( observations_type) == 50 * sizeof(float));
+  flight_data_reader input_reader( "flight_data.f50");
+  if( input_reader.is_open())
+    {
+      read_configuration_file( (char *)"flight_data.EEPROM", true); // read configuration dump file if it is present on the SD card
+
+      replaying_data = true;
+
+      while( input_reader.read_record( (observations_type *)&output_data))
+	{
+		SD_card_to_communicator_synchronizer.signal();
+		delay(10);
+	}
+
+      input_reader.close();
+      while( true)
+	; // wait for watchdog
+    }
+
   read_configuration_file(); // read configuration file if it is present on the SD card
-  setup_file_handling_completed.signal();
+  SD_card_to_communicator_synchronizer.signal();
 
   // wait until a GNSS timestamp is available.
   while (output_data.c.sat_fix_type == 0)
