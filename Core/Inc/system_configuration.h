@@ -31,7 +31,6 @@ extern float * probe; // debugging probes
 #define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
 #define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
-#define BLUETOOTH_NAME		"AT+NAMELarusMK1"
 #define ACTIVATE_USB_NMEA	1
 
 #define RUN_GNSS		0

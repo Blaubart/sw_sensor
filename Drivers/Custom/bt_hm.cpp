@@ -194,14 +194,19 @@ bool Bluetooth_Init(void)
   UART6_ChangeBaudRate(9600);
   if( false == Bluetooth_Cmd(interruptModule))
     UART6_ChangeBaudRate(115200);
-
-  response=Bluetooth_Cmd(interruptModule);
-  response=Bluetooth_Cmd(factory_resetModule);
-  response=Bluetooth_Cmd(setName);
-//  response=Bluetooth_Cmd(set_mode_0);
-//  response=Bluetooth_Cmd(NO_PIN);
-  response=Bluetooth_Cmd(baudratecmd);
-  response=Bluetooth_Cmd(resetModule);
+  else
+    {
+      response=Bluetooth_Cmd(interruptModule);
+      delay(100);
+      response=Bluetooth_Cmd(factory_resetModule);
+      delay(100);
+      response=Bluetooth_Cmd(setName);
+      delay(100);
+      response=Bluetooth_Cmd(baudratecmd);
+      delay(100);
+      UART6_ChangeBaudRate(115200);
+      response=Bluetooth_Cmd(resetModule);
+    }
 #endif
 
 #if 0 // BT_CONFIGURE
@@ -221,8 +226,6 @@ bool Bluetooth_Init(void)
   delay(500);
 #endif
 
-      UART6_ChangeBaudRate(115200);
-      response=Bluetooth_Cmd(resetModule);
       /*Seems that bluetooth modules is configured and answers at 115200 baud.*/
       update_system_state_set(BLUEZ_OUTPUT_ACTIVE);
 
