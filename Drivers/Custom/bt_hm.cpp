@@ -190,9 +190,9 @@ bool Bluetooth_Init(void)
   UART6_DeInit(); /* Stop driving TX line.*/
   UART6_Init();  /* Stop here and connect external UART adapter for debugging.*/
 
-#if 1 // BT_FACTORY_RESET
+#if 0 // BT_FACTORY_RESET
   UART6_ChangeBaudRate(9600);
-  if( false == Bluetooth_Cmd(interruptModule))
+  if( false ) // && false == Bluetooth_Cmd(interruptModule))
     UART6_ChangeBaudRate(115200);
   else
     {
@@ -209,18 +209,17 @@ bool Bluetooth_Init(void)
     }
 #endif
 
-#if 0 // BT_CONFIGURE
+#if 1 // BT_CONFIGURE
   /*First try to recognize used baudrate*/
   delay(500); /*Let module wake up after reset*/
   UART6_ChangeBaudRate(9600);
   if(true == Bluetooth_Cmd(interruptModule))
     {
       /*Modules uses Baudrate 9600, and thus has never configured before!*/
-//      response=Bluetooth_Cmd(factory_resetModule);
       response=Bluetooth_Cmd(setName);
-      response=Bluetooth_Cmd(NO_PIN);
-//      response=Bluetooth_Cmd(RELI_MODE);
+      delay(100);
       response=Bluetooth_Cmd(baudratecmd);
+      delay(100);
       response=Bluetooth_Cmd(resetModule);
     }
   delay(500);
