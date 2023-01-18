@@ -76,6 +76,7 @@ void communicator_runnable (void*)
 	  decimation_counter = 10;
 	  organizer.update_GNSS_data (output_data.c);
 	  organizer.update_every_100ms (output_data);
+	  trigger_CAN ();
 	}
 
       organizer.report_data ( output_data);
