@@ -296,6 +296,8 @@ data_logger_runnable (void*)
       read_configuration_file( (char *)"flight_data.EEPROM", true); // read configuration dump file if it is present on the SD card
 
       replaying_data = true;
+      // fake system state = "basic sensors operative"
+      system_state = GNSS_AVAILABLE | MTI_SENSOR_AVAILABE | MS5611_STATIC_AVAILABLE | PITOT_SENSOR_AVAILABLE;
 
       while( input_reader.read_record( (observations_type *)&output_data))
 	{

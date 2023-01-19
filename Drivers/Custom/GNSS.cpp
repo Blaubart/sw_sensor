@@ -1,4 +1,5 @@
 #include "system_configuration.h"
+#include "data_structures.h"
 #include "FreeRTOS_wrapper.h"
 #include "GNSS.h"
 #include "math.h"

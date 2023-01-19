@@ -4,6 +4,7 @@
  @author: Dr. Klaus Schaefer
  */
 #include "system_configuration.h"
+#include "data_structures.h"
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
 #include "stm32f4xx_hal.h"

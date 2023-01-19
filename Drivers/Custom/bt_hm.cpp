@@ -1,5 +1,6 @@
 #include <bt_hm.h>
 #include "system_configuration.h"
+#include "data_structures.h"
 #include "FreeRTOS_wrapper.h"
 #include "main.h"
 #include "uart6.h"

@@ -82,26 +82,7 @@ extern float * probe; // debugging probes
 #define ACTIVATE_WATCHDOG	0
 #define WATCHDOG_STATISTICS 	0
 
-enum
-{
-	GNSS_AVAILABLE 		= 1,
-	D_GNSS_AVAILABLE 	= 2,
-
-	MTI_SENSOR_AVAILABE 	= 0x10,
-	FXOS_SENSOR_AVAILABLE 	= 0x20,
-	L3GD20_SENSOR_AVAILABLE = 0x40,
-	MS5611_STATIC_AVAILABLE = 0x80,
-	MS5611_PITOT_AVAILABLE  = 0x100,
-	PITOT_SENSOR_AVAILABLE 	= 0x200,
-	AIR_SENSOR_AVAILABLE 	= 0x400,
-
-	USB_OUTPUT_ACTIVE	= 0x1000,
-	BLUEZ_OUTPUT_ACTIVE	= 0x2000,
-	CAN_OUTPUT_ACTIVE	= 0x4000,
-	USART_2_OUTPUT_ACTIVE	= 0x8000
-};
-
-extern volatile unsigned system_state;
+extern uint32_t system_state;
 
 inline void update_system_state_set( unsigned value)
 {
