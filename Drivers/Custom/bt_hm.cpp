@@ -5,6 +5,8 @@
 #include "uart6.h"
 #include "stdio.h"
 
+#if ACTIVATE_BLUETOOTH_NMEA
+
 #define ITM_TRACE_ENABLE 0
 
 #if ACTIVATE_BLUETOOTH_TEST
@@ -317,3 +319,5 @@ static void BLE_runnable (void*)
 }
 
 Task bluetooth_task (BLE_runnable, "BLE", 256, 0, BLUETOOTH_PRIORITY);
+
+#endif
