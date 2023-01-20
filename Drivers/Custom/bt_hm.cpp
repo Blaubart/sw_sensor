@@ -43,8 +43,7 @@ void bluetooth_hm_11(void*)
 
 RestrictedTask bluetooth_handling(bluetooth_hm_11, "BT_HM_11", 256);
 
-#endif
-
+#else
 
 #define BLUETOOTH_DEFAULT_UART_RX_TIMEOUT 500
 #define BLUETOOTH_CONNECTION_TIMEOUT 5000
@@ -184,7 +183,6 @@ void Bluetooth_Reset(void)
   HAL_GPIO_WritePin(BL_RESETB_GPIO_Port, BL_RESETB_Pin, GPIO_PIN_SET);
   delay(50);
 }
-#define BT_CONFIGURE 1
 
 bool Bluetooth_Init(void)
 {
@@ -213,7 +211,6 @@ bool Bluetooth_Init(void)
     }
 #endif
 
-#if 1 // BT_CONFIGURE
   /*First try to recognize used baudrate*/
   delay(500); /*Let module wake up after reset*/
   UART6_ChangeBaudRate(9600);
@@ -226,30 +223,19 @@ bool Bluetooth_Init(void)
       delay(100);
       response=Bluetooth_Cmd(resetModule);
     }
+
+  UART6_ChangeBaudRate(115200);
   delay(500);
-#endif
 
-      /*Seems that bluetooth modules is configured and answers at 115200 baud.*/
-      update_system_state_set(BLUEZ_OUTPUT_ACTIVE);
-
-  delay(500); /*Delay after last AT command.*/
   return true;
-}
-
-
-void Bluetooth_Transmit(uint8_t *pData, uint16_t Size)
-{
-  if(true == ble_connected)
-    {
-      /* Only transmit if module is connected.*/
-      UART6_Transmit(pData, Size);
-    }
 }
 
 bool Bluetooth_Receive(uint8_t *pRxByte, uint32_t timeout)
 {
   return UART6_Receive(pRxByte, timeout);
 }
+
+#if 0
 
 static void BLE_runnable (void*)
 {
@@ -323,3 +309,15 @@ static void BLE_runnable (void*)
 Task bluetooth_task (BLE_runnable, "BLE", 256, 0, BLUETOOTH_PRIORITY);
 
 #endif
+
+#endif // BLUETOOTH_TEST
+
+void Bluetooth_Transmit(uint8_t *pData, uint16_t Size)
+{
+  /* Only transmit if module is connected.*/
+//  if( ! ble_connected) return;
+
+  UART6_Transmit(pData, Size);
+}
+
+#endif // this module

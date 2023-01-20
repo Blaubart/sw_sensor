@@ -9,6 +9,7 @@
 #include "usbd_cdc.h"
 #include "usart_1_driver.h"
 #include "usart_2_driver.h"
+#include "uart6.h"
 #include "communicator.h"
 #include "system_state.h"
 
@@ -18,7 +19,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
 static void runnable (void* data)
 {
 
-  #if ACTIVATE_USB_NMEA
+#if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
   update_system_state_set( USB_OUTPUT_ACTIVE);
 #endif
@@ -30,6 +31,11 @@ static void runnable (void* data)
 #if ACTIVATE_USART_2_NMEA
   USART_2_Init ();
   update_system_state_set( USART_2_OUTPUT_ACTIVE);
+#endif
+
+#if ACTIVATE_BLUETOOTH_NMEA
+  Bluetooth_Init();
+  update_system_state_set( BLUEZ_OUTPUT_ACTIVE);
 #endif
 
 //  suspend(); // wait until we are needed

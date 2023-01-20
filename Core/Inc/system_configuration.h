@@ -44,11 +44,12 @@ extern float * probe; // debugging probes
 #define TEST_EEPROM		0
 
 #define ACTIVATE_BLUETOOTH_NMEA	1
+#define ACTIVATE_BLUETOOTH_TEST	0
+
 #define ACTIVATE_USART_1_NMEA	1
 #define ACTIVATE_USART_2_NMEA	1
 
 #define ACTIVATE_USB_TEST	0
-#define ACTIVATE_BLUETOOTH_TEST	0
 
 #define uSD_LED_STATUS		1
 
