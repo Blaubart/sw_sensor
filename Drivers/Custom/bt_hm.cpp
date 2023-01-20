@@ -5,6 +5,7 @@
 #include "main.h"
 #include "uart6.h"
 #include "stdio.h"
+#include "system_state.h"
 
 #if ACTIVATE_BLUETOOTH_NMEA
 

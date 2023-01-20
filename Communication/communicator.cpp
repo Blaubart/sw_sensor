@@ -18,6 +18,7 @@
 #include "D_GNSS_driver.h"
 #include "GNSS_driver.h"
 #include "CAN_distributor.h"
+#include "system_state.h"
 
 extern "C" void sync_logger (void);
 

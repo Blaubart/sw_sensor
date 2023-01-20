@@ -5,6 +5,7 @@
 #include "math.h"
 #include "main.h"
 #include "common.h"
+#include "system_state.h"
 
 COMMON bool GNSS_new_data_ready;
 COMMON bool D_GNSS_new_data_ready;

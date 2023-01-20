@@ -15,6 +15,7 @@
 #include "data_structures.h"
 #include "read_configuration_file.h"
 #include "communicator.h"
+#include "system_state.h"
 
 extern Semaphore SD_card_to_communicator_synchronizer;
 extern bool replaying_data;

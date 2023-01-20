@@ -82,16 +82,4 @@ extern float * probe; // debugging probes
 #define ACTIVATE_WATCHDOG	0
 #define WATCHDOG_STATISTICS 	0
 
-extern uint32_t system_state;
-
-inline void update_system_state_set( unsigned value)
-{
-	__atomic_or_fetch ( &system_state, value, __ATOMIC_ACQUIRE);
-}
-
-inline void update_system_state_clear( unsigned value)
-{
-	__atomic_and_fetch ( &system_state, ~value, __ATOMIC_ACQUIRE);
-}
-
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */
