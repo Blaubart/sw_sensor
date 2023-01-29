@@ -82,5 +82,6 @@ extern float * probe; // debugging probes
 #define SET_FPU_FLUSH_TO_ZERO	1
 #define ACTIVATE_WATCHDOG	0
 #define WATCHDOG_STATISTICS 	0
+#define RUNNING_PLAYER		1
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */

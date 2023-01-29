@@ -63,6 +63,11 @@ void communicator_runnable (void*)
 
   GNSS.coordinates.sat_fix_type = SAT_FIX_NONE; // just to be sure
 
+#if RUNNING_PLAYER //***************************************************************************
+
+  delay( 5000); // wait until bluetooth activated
+  NMEA_task.resume();
+
   int decimation_counter = 10;
   while (true)
     {
@@ -82,6 +87,8 @@ void communicator_runnable (void*)
 
       organizer.report_data ( output_data);
     }
+
+#endif //****************************************************************************************
 
   switch (GNSS_configuration)
     {
