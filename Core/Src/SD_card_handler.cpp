@@ -109,7 +109,7 @@ void write_crash_dump( void)
   char *next = buffer;
   int32_t writtenBytes = 0;
 
-  next = utox( (unsigned)FAT_time, buffer);
+  next = utox( buffer, (unsigned)FAT_time);
   next = append_string (next, ".CRASHDUMP");
   *next=0;
 
@@ -119,7 +119,7 @@ void write_crash_dump( void)
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
-  utox( UNIQUE_ID[0], buffer, 8);
+  utox( buffer, UNIQUE_ID[0], 8);
   buffer[8]='\r';
   buffer[9]='\n';
   f_write (&fp, buffer, 10, (UINT*) &writtenBytes);
@@ -131,30 +131,30 @@ void write_crash_dump( void)
   next = my_itoa( next, crashline);
   next=newline(next);
 
-  next = lutox( crashdata, next);
+  next = lutox( next, crashdata);
   next=newline(next);
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
-  next = utox( Bus_Fault_Address, buffer);
+  next = utox( buffer, Bus_Fault_Address);
   next=newline(next);
 
-  next = utox( Bad_Memory_Address, next);
+  next = utox( next, Bad_Memory_Address);
   next=newline(next);
 
-  next = utox( Memory_Fault_status, next);
+  next = utox( next, Memory_Fault_status);
   next=newline(next);
 
-  next = utox( Bad_Instruction_Address, next);
+  next = utox( next, Bad_Instruction_Address);
   next=newline(next);
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
-  next = utox( FPU_StatusControlRegister, buffer);
+  next = utox( buffer, FPU_StatusControlRegister);
   next=newline(next);
 
-  next = utox( Usage_Fault_Status_Register, next);
+  next = utox( next, Usage_Fault_Status_Register);
   next=newline(next);
 
-  next = utox( Hard_Fault_Status, next);
+  next = utox( next, Hard_Fault_Status);
   next=newline(next);
 
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
@@ -187,7 +187,7 @@ void write_EEPROM_dump( const char * filename)
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
-  utox( UNIQUE_ID[0], buffer, 8);
+  utox( buffer, UNIQUE_ID[0], 8);
   buffer[8]='\r';
   buffer[9]='\n';
   f_write (&fp, buffer, 10, (UINT*) &writtenBytes);
