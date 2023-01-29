@@ -43,7 +43,7 @@ static void runnable (void* data)
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
 
-      format_NMEA_string( output_data, NMEA_buf, 0); // todo fixme declination set to 0 for a while
+      format_NMEA_string( output_data, NMEA_buf);
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
