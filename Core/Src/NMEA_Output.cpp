@@ -38,7 +38,7 @@ static void runnable (void* data)
   update_system_state_set( BLUEZ_OUTPUT_ACTIVE);
 #endif
 
-//  suspend(); // wait until we are needed
+  suspend(); // wait until we are needed
 
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
@@ -60,8 +60,6 @@ static void runnable (void* data)
 #endif
     }
 }
-
-ROM float declination_DUMMY = 2.0f; // todo fixme !
 
 COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, NMEA_USB_PRIORITY | portPRIVILEGE_BIT);
 
