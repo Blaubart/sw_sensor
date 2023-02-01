@@ -22,7 +22,7 @@
 
 extern "C" void sync_logger (void);
 
-COMMON Semaphore SD_card_to_communicator_synchronizer;
+COMMON Semaphore SD_card_to_communicator_synchronizer(1,0,"SD2COM");
 COMMON bool replaying_data=false;
 COMMON Semaphore new_data_read;
 
