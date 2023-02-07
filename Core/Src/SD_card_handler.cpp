@@ -47,13 +47,6 @@ extern uint32_t FPU_StatusControlRegister;
 extern uint16_t Usage_Fault_Status_Register;
 extern uint32_t Hard_Fault_Status;
 
-inline char * newline( char * next)
-{
-  *next++ = '\r';
-  *next++ = '\n';
-  return next;
-}
-
 class flight_data_reader
   {
   public:
@@ -129,33 +122,33 @@ void write_crash_dump( void)
   next = buffer;
   *next++=' ';
   next = my_itoa( next, crashline);
-  next=newline(next);
+  newline(next);
 
   next = lutox( next, crashdata);
-  next=newline(next);
+  newline(next);
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
   next = utox( buffer, Bus_Fault_Address);
-  next=newline(next);
+  newline(next);
 
   next = utox( next, Bad_Memory_Address);
-  next=newline(next);
+  newline(next);
 
   next = utox( next, Memory_Fault_status);
-  next=newline(next);
+  newline(next);
 
   next = utox( next, Bad_Instruction_Address);
-  next=newline(next);
+  newline(next);
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
   next = utox( buffer, FPU_StatusControlRegister);
-  next=newline(next);
+  newline(next);
 
   next = utox( next, Usage_Fault_Status_Register);
-  next=newline(next);
+  newline(next);
 
   next = utox( next, Hard_Fault_Status);
-  next=newline(next);
+  newline(next);
 
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
