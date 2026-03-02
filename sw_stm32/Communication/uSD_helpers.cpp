@@ -32,6 +32,7 @@
 #include "GNSS.h"
 #include "persistent_data_file.h"
 #include "flexible_log_file_implementation.h"
+#include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "system_state.h"
 #include "uSD_helpers.h"

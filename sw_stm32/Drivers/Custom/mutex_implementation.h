@@ -6,32 +6,64 @@
 
 extern Mutex EEPROM_lock;
 
+#if 1 // RECURSIVE_LOCKS
+
 class Mutex_Wrapper_Type
 {
 public:
-  Mutex_Wrapper_Type( void)
-  : lock_count(0)
+  Mutex_Wrapper_Type( char * name)
+ : lock_count(0),
+   EEPROM_lock( name)
   {}
 
   void lock( void)
   {
-    bool success;
-    if( lock_count == 0)
-      success = EEPROM_lock.lock(2000); // todo patch check time
-    ASSERT( success);
-    ++lock_count;
+    if( 0 == __atomic_fetch_add( &lock_count, 1u, __ATOMIC_RELAXED))
+      {
+	bool success;
+	success = EEPROM_lock.lock(2000); // todo patch check time
+	ASSERT( success);
+      }
   }
 
   void unlock( void)
   {
     ASSERT( lock_count > 0);
-        --lock_count;
+    __atomic_fetch_sub(  &lock_count, 1u, __ATOMIC_RELAXED);
     if( lock_count == 0)
       EEPROM_lock.release();
   }
 private:
   unsigned lock_count;
+  Mutex EEPROM_lock;
 };
+
+#else
+
+class Mutex_Wrapper_Type
+{
+public:
+  Mutex_Wrapper_Type( char * name)
+ : lock_count(0),
+   EEPROM_lock( name)
+  {}
+
+  void lock( void)
+  {
+    bool success = EEPROM_lock.lock(2000); // todo patch check time
+    ASSERT( success);
+  }
+
+  void unlock( void)
+  {
+    EEPROM_lock.release();
+  }
+private:
+  unsigned lock_count;
+  Mutex EEPROM_lock;
+};
+
+#endif
 
 #include "scoped_lock.h"
 
