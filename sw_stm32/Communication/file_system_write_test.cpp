@@ -22,7 +22,7 @@ static void runnable( void *)
     {
       trigger_flash_fill.wait();
 
-      for( write_test_counter=0; write_test_counter < 1250; ++write_test_counter)
+      for( write_test_counter=0; write_test_counter < 8192; ++write_test_counter)
       {
         time = getTime_usec();
         success = permanent_data_file.store_data ( 0xa5, 2, &time);

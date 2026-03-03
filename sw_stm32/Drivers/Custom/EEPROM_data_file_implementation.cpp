@@ -9,8 +9,8 @@
 
 #define PAGE_0_HEAD ((uint32_t *)0x080C0000)
 #define PAGE_1_HEAD ((uint32_t *)0x080E0000)
-#define PAGE_SIZE_WORDS 0x1800
-#define PAGE_SIZE_BYTES (PAGE_SIZE_WORDS * 4)
+#define PAGE_SIZE_BYTES 0x20000
+#define PAGE_SIZE_WORDS (PAGE_SIZE_BYTES / 4)
 #define PAGE_SIZE_LONG_WORDS (PAGE_SIZE_WORDS / 2)
 
 COMMON Queue <flash_write_order> flash_command_queue( 3, "FLASH_CMD");
@@ -270,8 +270,8 @@ void recover_and_initialize_flash( void)
       if( success)
 	{
 	  // finally: if the file system is almost full: do a page swap right now
-//	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS >> 2))
-//	    file_system_page_swap(); todo patch
+	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS - (PAGE_SIZE_WORDS >> 2)))
+	    file_system_page_swap();
 	  return;
 	}
 
@@ -293,8 +293,8 @@ void recover_and_initialize_flash( void)
       if( success)
 	{
 	  // finally: if the file system is almost full: do a page swap right now
-//	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS >> 2))
-//	    file_system_page_swap();
+	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS - (PAGE_SIZE_WORDS >> 2)))
+	    file_system_page_swap();
 	  return;
 	}
 
