@@ -9,16 +9,15 @@
 
 #define PAGE_0_HEAD ((uint32_t *)0x080C0000)
 #define PAGE_1_HEAD ((uint32_t *)0x080E0000)
-#define PAGE_SIZE_BYTES 0x4000 // max 0x20000
-#define PAGE_SIZE_WORDS 0x1000 // 0x08000
-#define PAGE_SIZE_LONG_WORDS 0x800
+#define PAGE_SIZE_BYTES 0x20000
+#define PAGE_SIZE_WORDS (PAGE_SIZE_BYTES / 4)
+#define PAGE_SIZE_LONG_WORDS (PAGE_SIZE_WORDS / 2)
 
-COMMON Queue <flash_write_order> flash_command_queue( 3);
+COMMON Queue <flash_write_order> flash_command_queue( 3, "FLASH_CMD");
 COMMON Semaphore flash_isr_to_task( 1, 0, (char *)"FLASH_ISR");
-COMMON Mutex EEPROM_lock;
-COMMON Mutex_Wrapper_Type my_mutex;
+COMMON Mutex_Wrapper_Type my_mutex( (char *)"MTX_WRAPPER");
 
-COMMON EEPROM_file_system permanent_data_file;
+COMMON EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> permanent_data_file;
 extern Queue <flash_write_order> flash_command_queue;
 
 void FLASH_write( uint32_t * dest, uint32_t * source, unsigned n_words)
@@ -148,7 +147,7 @@ bool file_system_page_swap( void)
     {
       bool result = erase_sector( 0);
       ASSERT( result);
-      EEPROM_file_system new_data_file( (EEPROM_file_system_node *)PAGE_0_HEAD, (EEPROM_file_system_node *)(PAGE_0_HEAD+PAGE_SIZE_BYTES));
+      EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> new_data_file( (EEPROM_file_system_node *)PAGE_0_HEAD, (EEPROM_file_system_node *)(PAGE_0_HEAD+PAGE_SIZE_BYTES));
       new_data_file.import_all_data(permanent_data_file);
       result = erase_sector( 1);
       ASSERT( result);
@@ -158,7 +157,7 @@ bool file_system_page_swap( void)
     {
       bool result = erase_sector( 1);
       ASSERT( result);
-      EEPROM_file_system new_data_file( (EEPROM_file_system_node *)PAGE_1_HEAD, (EEPROM_file_system_node *)(PAGE_1_HEAD+PAGE_SIZE_BYTES));
+      EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> new_data_file( (EEPROM_file_system_node *)PAGE_1_HEAD, (EEPROM_file_system_node *)(PAGE_1_HEAD+PAGE_SIZE_BYTES));
       new_data_file.import_all_data(permanent_data_file);
       result = erase_sector( 0);
       ASSERT( result);
@@ -233,7 +232,7 @@ static bool import_legacy_EEPROM_data( uint32_t * flash_address, unsigned size_w
 	else
 	  result = false;
 
-	result &= permanent_data_file.store_data ( parameter->id, 1, &value);
+	result &= (0 != permanent_data_file.store_data ( parameter->id, 1, &value));
     }
   return result;
 }
@@ -271,14 +270,14 @@ void recover_and_initialize_flash( void)
       if( success)
 	{
 	  // finally: if the file system is almost full: do a page swap right now
-	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS >> 2))
+	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS - (PAGE_SIZE_WORDS >> 2)))
 	    file_system_page_swap();
 	  return;
 	}
 
       // make a page swap and copy all clean records
       erase_sector( 0);
-      EEPROM_file_system new_data_copy( (EEPROM_file_system_node *)PAGE_0_HEAD, (EEPROM_file_system_node *)PAGE_0_HEAD+PAGE_SIZE_WORDS);
+      EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> new_data_copy( (EEPROM_file_system_node *)PAGE_0_HEAD, (EEPROM_file_system_node *)PAGE_0_HEAD+PAGE_SIZE_WORDS);
 
       // try data recovery
       new_data_copy.import_all_data( permanent_data_file);
@@ -294,14 +293,14 @@ void recover_and_initialize_flash( void)
       if( success)
 	{
 	  // finally: if the file system is almost full: do a page swap right now
-	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS >> 2))
+	  if( permanent_data_file.get_remaining_space_words() < (PAGE_SIZE_WORDS - (PAGE_SIZE_WORDS >> 2)))
 	    file_system_page_swap();
 	  return;
 	}
 
       // make a page swap and copy all clean records
       erase_sector( 1);
-      EEPROM_file_system new_data_copy( (EEPROM_file_system_node *)PAGE_1_HEAD, (EEPROM_file_system_node *)PAGE_1_HEAD+PAGE_SIZE_WORDS);
+      EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> new_data_copy( (EEPROM_file_system_node *)PAGE_1_HEAD, (EEPROM_file_system_node *)PAGE_1_HEAD+PAGE_SIZE_WORDS);
 
       // try data recovery
       new_data_copy.import_all_data(permanent_data_file);

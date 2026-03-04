@@ -36,7 +36,7 @@
 #include "GNSS_driver.h"
 #include "CAN_distributor.h"
 #include "uSD_handler.h"
-#include "persistent_data_file.h"
+#include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "flexible_log_file_implementation.h"
 
@@ -91,6 +91,8 @@ static ROM TaskParameters_t usart_3_task_param =
     }
   };
 
+uint64_t getTime_usec(void);
+
 void
 communicator_runnable (void*)
 {
@@ -99,6 +101,8 @@ communicator_runnable (void*)
 
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait ();
+
+  int64_t time = getTime_usec();
 
   report_horizon_avalability ();
 
@@ -155,6 +159,8 @@ communicator_runnable (void*)
 
   GNSS.clear_sat_fix_type ();
   GNSS_new_data_ready = false;
+
+  time = getTime_usec() - time;
 
   // the construction-process may be very slow and shall not wake the watchdog
   // now we can switch to our original priority
