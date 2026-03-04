@@ -3,10 +3,11 @@
 
 #include "FreeRTOS_wrapper.h"
 #include "my_assert.h"
+#include "system_configuration.h"
 
 extern Mutex EEPROM_lock;
 
-#if 1 // RECURSIVE_LOCKS
+#if RECURSIVE_LOCKS
 
 class Mutex_Wrapper_Type
 {
@@ -21,9 +22,11 @@ public:
     if( 0 == __atomic_fetch_add( &lock_count, 1u, __ATOMIC_RELAXED))
       {
 	bool success;
-	success = EEPROM_lock.lock(2000); // todo patch check time
+	success = EEPROM_lock.lock( MUTEX_TIMEOUT);
 	ASSERT( success);
       }
+    else
+      asm("bkpt 0"); // todo patch
   }
 
   void unlock( void)
@@ -50,7 +53,7 @@ public:
 
   void lock( void)
   {
-    bool success = EEPROM_lock.lock(2000); // todo patch check time
+    bool success = EEPROM_lock.lock(25);
     ASSERT( success);
   }
 
