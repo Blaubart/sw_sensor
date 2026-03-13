@@ -261,8 +261,7 @@ extern Semaphore trigger_flash_fill;
 		    }
 		  else
 		    {
-		      bool read_successful = EEPROM_config_read_write (p,
-								       value);
+		      bool read_successful = EEPROM_config_read_write (p,value);
 
 		      ASSERT(read_successful);
 
