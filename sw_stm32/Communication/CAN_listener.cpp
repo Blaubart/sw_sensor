@@ -157,10 +157,9 @@ bool get_vario_mode_updates(float32_t &value)
   return false;
 }
 
-void
-CAN_listener_task_runnable (void*)
+void CAN_listener_task_runnable (void*)
 {
-  TickType_t magnetometer_last_heard=0;
+  TickType_t magnetometer_last_heard = 0;
 
   CAN_distributor_entry my_entry
     { 0x040F, 0x0402, &can_packet_q }; // Listen for "Set System Wide Config Item" on CAN
@@ -174,93 +173,115 @@ CAN_listener_task_runnable (void*)
   while (true)
     {
 
-      bool rx_ed = can_packet_q.receive(p, 100);
-      if( rx_ed)
+      bool rx_ed = can_packet_q.receive (p, 100);
+      if (rx_ed)
 	{
-	if ( (p.id == 0x070) && (p.dlc == 6))
-	  {
-	    external_magnetometer[0] = (float32_t)(p.data_sh[0]) * 0.01333333f; // 75LSB / uTesla
-	    external_magnetometer[1] = (float32_t)(p.data_sh[1]) * 0.01333333f;
-	    external_magnetometer[2] = (float32_t)(p.data_sh[2]) * 0.01333333f;
-	    update_system_state_set( EXTERNAL_MAGNETOMETER_AVAILABLE);
-	    magnetometer_last_heard = xTaskGetTickCount();
-	  }
-	      if(( p.id & 0x40F) == 0x402) // = "set system wide config item"
-	        switch (p.data_h[0])
-		  {
-		  case SYSWIDECONFIG_ITEM_ID_MC:
-		    latest_mc = p.data_f[1];
-		    new_mc = true;
-		    break;
+	  if ((p.id == 0x070) && (p.dlc == 6))
+	    {
+	      external_magnetometer[0] = (float32_t) (p.data_sh[0])
+		  * 0.01333333f; // 75LSB / uTesla
+	      external_magnetometer[1] = (float32_t) (p.data_sh[1])
+		  * 0.01333333f;
+	      external_magnetometer[2] = (float32_t) (p.data_sh[2])
+		  * 0.01333333f;
+	      update_system_state_set (EXTERNAL_MAGNETOMETER_AVAILABLE);
+	      magnetometer_last_heard = xTaskGetTickCount ();
+	    }
+	  if ((p.id & 0x40F) == 0x402) // = "set system wide config item"
+	    switch (p.data_h[0])
+	      {
+	      case SYSWIDECONFIG_ITEM_ID_MC:
+		latest_mc = p.data_f[1];
+		new_mc = true;
+		break;
 
-		  case SYSWIDECONFIG_ITEM_ID_BUGS:
-		    latest_bugs = p.data_f[1];
-		    new_bugs = true;
-		    break;
+	      case SYSWIDECONFIG_ITEM_ID_BUGS:
+		latest_bugs = p.data_f[1];
+		new_bugs = true;
+		break;
 
-		  case SYSWIDECONFIG_ITEM_ID_QNH:
-		    latest_qnh = p.data_f[1];
-		    new_qnh = true;
-		    break;
+	      case SYSWIDECONFIG_ITEM_ID_QNH:
+		latest_qnh = p.data_f[1];
+		new_qnh = true;
+		break;
 
-		  case SYSWIDECONFIG_ITEM_ID_VARIO_MODE:
-		    latest_vario_mode = (float)p.data_b[2];
-		    new_vario_mode = true;
-		    break;
+	      case SYSWIDECONFIG_ITEM_ID_VARIO_MODE:
+		latest_vario_mode = (float) p.data_b[2];
+		new_vario_mode = true;
+		break;
 
-		  case SYSWIDECONFIG_ITEM_ID_BALLAST_FRACTION:
-		    latest_bal = p.data_f[1];
-		    new_bal = true;
-		    break;
+	      case SYSWIDECONFIG_ITEM_ID_BALLAST_FRACTION:
+		latest_bal = p.data_f[1];
+		new_bal = true;
+		break;
 
-		  case CMD_MEASURE_LEFT:
-		    communicator_command_queue.send( MEASURE_CALIB_LEFT, 1);
-		    break;
+	      case CMD_MEASURE_LEFT:
+		communicator_command_queue.send (MEASURE_CALIB_LEFT, 1);
+		break;
 
-		  case CMD_MEASURE_RIGHT:
-		    communicator_command_queue.send( MEASURE_CALIB_RIGHT, 1);
-		    break;
+	      case CMD_MEASURE_RIGHT:
+		communicator_command_queue.send (MEASURE_CALIB_RIGHT, 1);
+		break;
 
-		  case CMD_MEASURE_LEVEL:
-		    communicator_command_queue.send( MEASURE_CALIB_LEVEL, 1);
-		    break;
+	      case CMD_MEASURE_LEVEL:
+		communicator_command_queue.send (MEASURE_CALIB_LEVEL, 1);
+		break;
 
-		  case CMD_CALCULATE:
-		    communicator_command_queue.send( SET_SENSOR_ROTATION, 1);
-		    break;
+	      case CMD_CALCULATE:
+		communicator_command_queue.send (SET_SENSOR_ROTATION, 1);
+		break;
 
-		  case CMD_TUNE:
+	      case CMD_TUNE:
 #if RUN_FLASH_WRITE_TESTER
 extern Semaphore trigger_flash_fill;
 		    trigger_flash_fill.signal();
 #else
-		    communicator_command_queue.send( FINE_TUNE_CALIB, 1);
+		communicator_command_queue.send (FINE_TUNE_CALIB, 1);
 #endif
-		    break;
-		  case CMD_RESET_SENSOR:
-	#if CRASFILE_ON_USER_RESET == 0
+		break;
+	      case CMD_RESET_SENSOR:
+#if CRASFILE_ON_USER_RESET == 0
 		    user_initiated_reset = true;
 	#endif
-		    ASSERT(false); // trigger exception that way
-		    break;
+		ASSERT(false)
+		; // trigger exception that way
+		break;
 
-		  default: // try to interpret the command as "set" or "get" value
-		    float value;
-		    bool read_successful = EEPROM_config_read_write( p, value);
-		    if( read_successful)
-		      {
-			CANpacket txp( CAN_Id_Send_Config_Value, 8);
-			txp.data_w[0] = p.data_h[0]; // the ID we have received
-			txp.data_f[1] = value;
-			CAN_enqueue( txp, 1);
-		      }
-		    break;
-		  }
+	      default: // try to interpret the command as "set" or "get" value
+		{
+		  // config parameter range check
+		  uint16_t command = p.data_h[0];
+		  if(( command < PARAMETER_OFFSET) || (command >= ( PARAMETER_OFFSET + PARAMETER_LIST_LENGTH)))
+		    break; // ignore invalid parameter ID
+
+		  float value;
+		  if (p.data_b[2] == 1) // if it is a "write"
+		    {
+		      (void) EEPROM_config_read_write (p, value);
+		    }
+		  else
+		    {
+		      bool read_successful = EEPROM_config_read_write (p,
+								       value);
+
+		      ASSERT(read_successful);
+
+		      CANpacket txp ( CAN_Id_Send_Config_Value, 8);
+		      txp.data_w[0] = p.data_h[0]; // the ID we have received
+		      txp.data_f[1] = value;
+		      bool ok = CAN_enqueue (txp, 1);
+
+		      ASSERT(ok);
+		    }
+
+		  break;
+		}
+	      }
 	}
       else
 	{
-	  if( xTaskGetTickCount() - magnetometer_last_heard > 100)
-	    update_system_state_clear( EXTERNAL_MAGNETOMETER_AVAILABLE);
+	  if ( xTaskGetTickCount () - magnetometer_last_heard > 100)
+	    update_system_state_clear (EXTERNAL_MAGNETOMETER_AVAILABLE);
 	}
     }
 }
