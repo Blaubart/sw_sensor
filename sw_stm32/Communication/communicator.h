@@ -45,6 +45,5 @@ extern state_vector_t state_vector;
 
 extern RestrictedTask communicator_task;
 extern Queue < communicator_command_t> communicator_command_queue;
-extern reminder_flag landing_detected;
 
 #endif /* COMMUNICATOR_H_ */
