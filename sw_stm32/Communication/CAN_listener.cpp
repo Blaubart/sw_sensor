@@ -32,6 +32,7 @@
 #include "watchdog_handler.h"
 #include "system_state.h"
 #include "communicator.h"
+#include "uSD_handler.h"
 
 #define CAN_Id_Send_Config_Value 0x12f
 
@@ -243,8 +244,8 @@ extern Semaphore trigger_flash_fill;
 #if CRASFILE_ON_USER_RESET == 0
 		    user_initiated_reset = true;
 	#endif
-		ASSERT(false)
-		; // trigger exception that way
+		ASSERT(false); // trigger exception that way
+//		perform_after_landing_actions.set(); // todo patch
 		break;
 
 	      default: // try to interpret the command as "set" or "get" value
