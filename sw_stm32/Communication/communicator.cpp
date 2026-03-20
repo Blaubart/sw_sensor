@@ -279,6 +279,7 @@ communicator_runnable (void*)
 	      organizer.update_sensor_orientation_data (
 		  vector_average_collection);
 	      organizer.initialize_before_measurement ();
+	      organizer.initialize_after_first_measurement (coordinates, observations);
 	      report_horizon_avalability ();
 	      break;
 	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
@@ -292,6 +293,7 @@ communicator_runnable (void*)
 
 	    case SOME_EEPROM_VALUE_HAS_CHANGED:
 	      organizer.initialize_before_measurement ();
+	      organizer.initialize_after_first_measurement (coordinates, observations);
 	      report_horizon_avalability ();
 	      break;
 
@@ -320,6 +322,7 @@ communicator_runnable (void*)
 		  organizer.fine_tune_sensor_orientation (
 		      vector_average_collection);
 		  organizer.initialize_before_measurement ();
+		  organizer.initialize_after_first_measurement (coordinates, observations);
 		  report_horizon_avalability ();
 		}
 	    }
