@@ -15,17 +15,17 @@ COMMON Semaphore trigger_flash_fill( 1,0, (char *)"FLASH_FILL");
 static void runnable( void *)
 {
   bool success;
-  delay( 10000);
+  delay( 60 * 1000);
   uint64_t time;
 
   while( true)
     {
-      trigger_flash_fill.wait();
+//      trigger_flash_fill.wait();
 
       for( write_test_counter=0; write_test_counter < 8192; ++write_test_counter)
       {
         time = getTime_usec();
-        success = permanent_data_file.store_data ( 0xa5, 2, &time);
+        success = permanent_data_file.store_data ( TEST_PATTERN, 2, &time);
         ASSERT( success);
 
         HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
@@ -34,10 +34,10 @@ static void runnable( void *)
 
       uint64_t dummy;
       time = getTime_usec();
-      success = permanent_data_file.retrieve_data(0xa5, 2, &dummy);
+      success = permanent_data_file.retrieve_data( TEST_PATTERN, 2, &dummy);
       time = getTime_usec() - time;
 
-//      suspend();
+      suspend();
     }
 }
 
