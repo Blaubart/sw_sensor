@@ -15,12 +15,12 @@ COMMON Semaphore trigger_flash_fill( 1,0, (char *)"FLASH_FILL");
 static void runnable( void *)
 {
   bool success;
-  delay( 10000);
+  delay( 60 * 1000);
   uint64_t time;
 
   while( true)
     {
-      trigger_flash_fill.wait();
+//      trigger_flash_fill.wait();
 
       for( write_test_counter=0; write_test_counter < 8192; ++write_test_counter)
       {
@@ -37,7 +37,7 @@ static void runnable( void *)
       success = permanent_data_file.retrieve_data(0xa5, 2, &dummy);
       time = getTime_usec() - time;
 
-//      suspend();
+      suspend();
     }
 }
 
