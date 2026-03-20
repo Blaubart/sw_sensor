@@ -28,7 +28,7 @@
 #include "persistent_data.h"
 #include "git-commit-version.h"
 
-#define RUN_FLASH_WRITE_TESTER		1
+#define RUN_FLASH_WRITE_TESTER		0
 #define ANALYZE_WRITE_PERFORMANCE	0
 
 #define USE_HARDWARE_EEPROM		1
