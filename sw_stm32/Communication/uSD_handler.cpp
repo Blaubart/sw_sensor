@@ -60,6 +60,8 @@ extern RestrictedTask uSD_handler_task;
 //!< this executable takes care of all uSD reading and writing
 void uSD_handler_runnable (void*)
 {
+  make_firmware_digest();
+
 restart:
 
   HAL_SD_DeInit (&hsd);

@@ -36,6 +36,7 @@
 #include "GNSS_driver.h"
 #include "CAN_distributor.h"
 #include "uSD_handler.h"
+#include "uSD_helpers.h"
 #include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "flexible_log_file_implementation.h"
@@ -188,21 +189,30 @@ communicator_runnable (void*)
 
 	  // we can now start using the log file
 	  // so: write the necessary start information
-	    {
-	      uint32_t file_format_version =
-		  flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
-	      flex_file.append_record (FILE_FORMAT_VERSION, &file_format_version, 1);
-	    }
+	  {
+	    uint32_t file_format_version =
+		flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
+	    flex_file.append_record ( FILE_FORMAT_VERSION, &file_format_version, 1);
 
-	  // find all used EEPROM records and write them into the flex file
-	  for (EEPROM_file_system_node::ID_t id = 1;
-	      id < LOWEST_UNUSED_EEPROM_ID; ++id)
-	    {
-	      EEPROM_file_system_node *node = permanent_data_file.find_datum (
-		  id);
-	      if (node)
-		flex_file.append_record (EEPROM_FILE_RECORD, (uint32_t*) node, node->size);
-	    }
+	    // write hardware, firmware id and FLASH SHA256
+#define DESCRIPTION_SIZE_BYTES (32+sizeof( uint32_t)*4+32)
+	    uint8_t description[DESCRIPTION_SIZE_BYTES];
+	    memset( description, 0, 32);
+	    strcpy( (char *)description, GIT_TAG_INFO); // fw string
+	    extern  uint32_t UNIQUE_ID[4];
+	    memcpy( description+32, UNIQUE_ID, sizeof( uint32_t)*4); // hw ID
+	    memcpy( description+32+16, firmware_SHA256_digest, 32); // flash program SHA256 digest
+	    flex_file.append_record ( LARUS_DESCRIPTION, (uint32_t *)description, DESCRIPTION_SIZE_BYTES / sizeof( uint32_t));
+	  }
+
+	  {
+	    // write all valid EEPROM content as single flexible file record
+#define FLASH_DATA_COPY_SIZE_WORDS 128
+	    uint32_t flash_data_copy[FLASH_DATA_COPY_SIZE_WORDS];
+	    EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> flash_data_file( (EEPROM_file_system_node *)flash_data_copy, (EEPROM_file_system_node *)flash_data_copy+FLASH_DATA_COPY_SIZE_WORDS);
+	    flash_data_file.import_all_data( permanent_data_file, false);
+	    flex_file.append_record ( EEPROM_FILE, flash_data_copy, flash_data_file.get_size()/sizeof(uint32_t));
+	  }
 	}
 
       if (GNSS_new_data_ready) // triggered after 75ms or 100ms, GNSS-dependent
@@ -281,6 +291,7 @@ communicator_runnable (void*)
 	      organizer.initialize_before_measurement ();
 	      organizer.initialize_after_first_measurement (coordinates, observations);
 	      report_horizon_avalability ();
+	      configuration_data_written = false;
 	      break;
 	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
 	      vector_average_organizer.source = &(observations.acc);
@@ -295,6 +306,7 @@ communicator_runnable (void*)
 	      organizer.initialize_before_measurement ();
 	      organizer.initialize_after_first_measurement (coordinates, observations);
 	      report_horizon_avalability ();
+	      configuration_data_written = false;
 	      break;
 
 	    case NO_COMMAND:
@@ -324,6 +336,7 @@ communicator_runnable (void*)
 		  organizer.initialize_before_measurement ();
 		  organizer.initialize_after_first_measurement (coordinates, observations);
 		  report_horizon_avalability ();
+		  configuration_data_written = false;
 		}
 	    }
 	}
@@ -339,6 +352,7 @@ communicator_runnable (void*)
 	    {
 	      organizer.cleanup_after_landing ();
 	      perform_after_landing_actions.set ();
+	      configuration_data_written = false;
 	    }
 
 	  trigger_CAN ();

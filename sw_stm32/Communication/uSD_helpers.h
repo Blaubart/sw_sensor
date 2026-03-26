@@ -32,5 +32,7 @@ bool read_software_update (void);
 void write_crash_dump( void);
 bool write_EEPROM_dump( const char * file_path);
 char * format_date_time( char * target, const D_GNSS_coordinates_t &coordinates);
+void make_firmware_digest( void);
+extern uint8_t firmware_SHA256_digest[32];
 
 #endif /* USD_HELPERS_H_ */

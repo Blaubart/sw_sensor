@@ -25,6 +25,7 @@ bool flexible_log_file_implementation_t::open (char *file_name)
 
 bool flexible_log_file_implementation_t::close( void)
 {
+  file_is_open = false;
   UINT writtenBytes = 0;
   if( status & FILLING_LOW)
     f_write( &out_file, (const char *)flexible_log_file_t::buffer, (flexible_log_file_t::write_pointer - flexible_log_file_t::buffer) * sizeof( uint32_t), &writtenBytes);
@@ -34,7 +35,6 @@ bool flexible_log_file_implementation_t::close( void)
   f_close ( &out_file);
 
   status = 0;
-  file_is_open = false;
   return true;
 }
 
