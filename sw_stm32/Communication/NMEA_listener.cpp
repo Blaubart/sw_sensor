@@ -33,40 +33,6 @@
 
 #define MAX_LEN 40
 
-inline bool is_digit(char c) { return c >= '0' && c <= '9'; }
-
-static float my_atof(const char* s)
-{
-    int sign = 1;
-    if (*s == '+' || *s == '-')
-      {
-        if (*s == '-') sign = -1;
-        ++s;
-      }
-
-    float v = 0.0f;
-    while (is_digit(*s))
-      {
-        v = v * 10.0 + (*s - '0');
-        ++s;
-      }
-
-    if (*s == '.')
-      {
-        double p = 0.1;
-        ++s;
-        while (is_digit(*s))
-          {
-            v += (*s - '0') * p;
-            p *= 0.1;
-            ++s;
-          }
-      }
-
-    return sign * v;
-}
-
-
 void NMEA_listener_task_runnable( void *)
 {
   char rxNMEASentence[MAX_LEN];
