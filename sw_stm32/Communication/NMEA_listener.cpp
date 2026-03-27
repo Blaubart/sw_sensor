@@ -73,6 +73,8 @@ void NMEA_listener_task_runnable( void *)
 
 		  if(true == NMEA_checksum(rxNMEASentence))
 		    {
+		      acquire_privileges(); // otherwise atof() will trigger an MPU fault !
+
 		      rxNMEASentence[len-2] = 0; // Cut the checksum from the sentence for ASCII parsing
 
 		      if (strncmp(rxNMEASentence,"$PLARS,H,MC,",12) == 0)
@@ -144,6 +146,7 @@ void NMEA_listener_task_runnable( void *)
 			  can_packet.data_b[2] = 0; //SpeedToFly/cruising mode on can
 			  CAN_enqueue(can_packet, portMAX_DELAY);
 			}
+		      drop_privileges();
 		    }
 		  i = 0;
 		  len = 0;
