@@ -6,6 +6,7 @@
 
 #include "compass_calibrator_3D.h"
 #include "magnetic_matrix_calculator.h"
+#include "signal_flight_event.h"
 
 #define MAG_CALC_DATA_SIZE 8192
 magnetic_calculation_data_t __attribute__((section(".mag_calc_data"))) temporary_mag_calculation_data;
@@ -25,10 +26,21 @@ static void magnetic_calculator_runnable ( void *)
   while( true)
     {
       calculation_request.receive( do_calculate_external_mag);
+
       if( do_calculate_external_mag)
-	(void) external_compass_calibrator_3D.calculate();
+	{
+	  uint32_t event = EXT_MAG_CALIBRATION_DONE;
+	  if( external_compass_calibrator_3D.calculate())
+	    event |= 0x100;
+	  signal_logger_event( event);
+	}
       else
-	(void) compass_calibrator_3D.calculate();
+	{
+	  uint32_t event = MAG_CALIBRATION_DONE;
+	  if( compass_calibrator_3D.calculate())
+	    event |= 0x100;
+	  signal_logger_event( event);
+	}
     }
 }
 

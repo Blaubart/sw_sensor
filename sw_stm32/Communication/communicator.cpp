@@ -50,7 +50,12 @@ extern "C" void sync_logger (void);
 
 COMMON Semaphore setup_file_handling_completed(1,0,(char *)"SETUP");
 
-//COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
+COMMON Queue <uint32_t> flight_event_queue(3);
+void signal_logger_event( uint32_t event)
+{
+  flight_event_queue.send( event, 1);
+}
+
 COMMON GNSS_type GNSS ( coordinates);
 
 COMMON Queue < communicator_command_t> communicator_command_queue(2);
@@ -183,38 +188,6 @@ communicator_runnable (void*)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
-      if (not configuration_data_written && flex_file.is_open ())
-	{
-	  configuration_data_written = true;
-
-	  // we can now start using the log file
-	  // so: write the necessary start information
-	  {
-	    uint32_t file_format_version =
-		flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
-	    flex_file.append_record ( FILE_FORMAT_VERSION, &file_format_version, 1);
-
-	    // write hardware, firmware id and FLASH SHA256
-#define DESCRIPTION_SIZE_BYTES (32+sizeof( uint32_t)*4+32)
-	    uint8_t description[DESCRIPTION_SIZE_BYTES];
-	    memset( description, 0, 32);
-	    strcpy( (char *)description, GIT_TAG_INFO); // fw string
-	    extern  uint32_t UNIQUE_ID[4];
-	    memcpy( description+32, UNIQUE_ID, sizeof( uint32_t)*4); // hw ID
-	    memcpy( description+32+16, firmware_SHA256_digest, 32); // flash program SHA256 digest
-	    flex_file.append_record ( LARUS_DESCRIPTION, (uint32_t *)description, DESCRIPTION_SIZE_BYTES / sizeof( uint32_t));
-	  }
-
-	  {
-	    // write all valid EEPROM content as single flexible file record
-#define FLASH_DATA_COPY_SIZE_WORDS 128
-	    uint32_t flash_data_copy[FLASH_DATA_COPY_SIZE_WORDS];
-	    EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> flash_data_file( (EEPROM_file_system_node *)flash_data_copy, (EEPROM_file_system_node *)flash_data_copy+FLASH_DATA_COPY_SIZE_WORDS);
-	    flash_data_file.import_all_data( permanent_data_file, false);
-	    flex_file.append_record ( EEPROM_FILE, flash_data_copy, flash_data_file.get_size()/sizeof(uint32_t));
-	  }
-	}
-
       if (GNSS_new_data_ready) // triggered after 75ms or 100ms, GNSS-dependent
 	{
 	  update_system_state_set (GNSS_AVAILABLE);
@@ -253,6 +226,8 @@ communicator_runnable (void*)
       communicator_command_t command;
       if (communicator_command_queue.receive (command, 0))
 	{
+	  signal_logger_event( CAN_COMMAND_RECEIVED | (command << 8));
+
 	  switch (command)
 	    {
 	    case MEASURE_CALIB_LEFT:
@@ -398,7 +373,7 @@ communicator_runnable (void*)
 	  break;
 	}
 
-      // service the red error LED
+      // service the red error LED ********************************************************************
       HAL_GPIO_WritePin (
 	  LED_ERROR_GPIO_Port,
 	  LED_ERROR_Pin,
@@ -412,11 +387,41 @@ communicator_runnable (void*)
 	  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
 	}
 
-      // write log file
-      if (configuration_data_written && flex_file.is_open ())
+      // write log file ********************************************************************************
+      if( flex_file.is_open ()) // data logging is active
 	{
-	  flex_file.append_record (
-	      BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
+	  if( not configuration_data_written) // need to write the EEPROM content
+	      {
+		  {
+		    uint32_t file_format_version =
+			flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
+		    flex_file.append_record ( FILE_FORMAT_VERSION, &file_format_version, 1);
+
+		    // write hardware, firmware id and FLASH SHA256
+#define DESCRIPTION_SIZE_BYTES (32+sizeof( uint32_t)*4+32)
+		    uint8_t description[DESCRIPTION_SIZE_BYTES];
+		    memset( description, 0, 32);
+		    strcpy( (char *)description, GIT_TAG_INFO); // fw string
+		    extern  uint32_t UNIQUE_ID[4];
+		    memcpy( description+32, UNIQUE_ID, sizeof( uint32_t)*4); // hw ID
+		    memcpy( description+32+16, firmware_SHA256_digest, 32); // flash program SHA256 digest
+		    flex_file.append_record ( LARUS_DESCRIPTION, (uint32_t *)description, DESCRIPTION_SIZE_BYTES / sizeof( uint32_t));
+		  }
+
+		  {
+		    // write all valid EEPROM content packed as one flexible file record
+#define FLASH_DATA_COPY_SIZE_WORDS 128
+		    uint32_t flash_data_copy[FLASH_DATA_COPY_SIZE_WORDS];
+		    EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> flash_data_file(
+			(EEPROM_file_system_node *)flash_data_copy, (EEPROM_file_system_node *)flash_data_copy+FLASH_DATA_COPY_SIZE_WORDS);
+		    flash_data_file.import_all_data( permanent_data_file, false);
+		    flex_file.append_record ( EEPROM_FILE, flash_data_copy, flash_data_file.get_size()/sizeof(uint32_t));
+		  }
+
+		  configuration_data_written = true;
+	      }
+
+	  flex_file.append_record ( BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
 
 	  if (system_state & EXTERNAL_MAGNETOMETER_AVAILABLE)
 	    {
@@ -434,21 +439,24 @@ communicator_runnable (void*)
 		case SAT_FIX:
 		default:
 		  flex_file.append_record (
-		      GNSS_DATA, (uint32_t*) &coordinates,
-		      sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
+		      GNSS_DATA, (uint32_t*) &coordinates,  sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
 		  break;
 		case SAT_FIX | SAT_HEADING:
 		  flex_file.append_record (
-		      D_GNSS_DATA, (uint32_t*) &coordinates,
-		      sizeof(D_GNSS_coordinates_t) / sizeof(uint32_t));
+		      D_GNSS_DATA, (uint32_t*) &coordinates, sizeof(D_GNSS_coordinates_t) / sizeof(uint32_t));
 		  break;
-		case SAT_FIX_NONE:
+		case SAT_FIX_NONE: // need to log the GNSS status like number of visible satellites etc
 		  flex_file.append_record (
-		      GNSS_DATA, (uint32_t*) &coordinates,
-		      sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
+		      GNSS_DATA, (uint32_t*) &coordinates,   sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
 		  break;
 		}
 	    }
+
+	  { // record event if any
+	    uint32_t event;
+	    if( flight_event_queue.receive( event, 0))
+		  flex_file.append_record ( FLIGHT_EVENT, &event, sizeof(event));
+	  }
 	}
     }
 }

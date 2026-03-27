@@ -33,6 +33,7 @@
 #include "system_state.h"
 #include "communicator.h"
 #include "uSD_handler.h"
+#include "signal_flight_event.h"
 
 #define CAN_Id_Send_Config_Value 0x12f
 
@@ -83,8 +84,9 @@ bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
       {
 	float value = p.data_f[1];
 
-	(void) write_EEPROM_value( id, value); // no way to report errors here ...
+	bool success = write_EEPROM_value( id, value);
 	communicator_command_queue.send( SOME_EEPROM_VALUE_HAS_CHANGED, 1);
+	signal_logger_event( EEPROM_CONFIGURATION_CHANGED | (success ? 0x100 : 0) );
 	return false; // report "nothing read"
       }
       break;
