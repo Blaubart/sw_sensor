@@ -86,7 +86,7 @@ bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
 
 	bool success = write_EEPROM_value( id, value);
 	communicator_command_queue.send( SOME_EEPROM_VALUE_HAS_CHANGED, 1);
-	signal_logger_event( EEPROM_CONFIGURATION_CHANGED | (success ? id + 0x100 : id) );
+	signal_logger_event( EEPROM_CONFIGURATION_CHANGED | (success ? (id<<8) + 0x10000 : (id<<8)) );
 	return false; // report "nothing read"
       }
       break;
