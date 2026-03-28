@@ -177,11 +177,11 @@ communicator_runnable (void*)
   NMEA_task.resume ();
   CAN_task.resume ();
 
-  unsigned synchronizer_10Hz = 10; // re-sampling 100Hz -> 10Hz
-  unsigned GNSS_watchdog = 0;
-  unsigned GNSS_LED_count = 0;
-  unsigned old_system_state = system_state;
-  bool configuration_data_written = false;
+  unsigned synchronizer_10Hz = 10; 	// re-sampling 100Hz -> 10Hz
+  unsigned GNSS_watchdog = 0;		// monitor incoming GNSS data rate
+  unsigned GNSS_LED_count = 0;		// maintain GNSS LED
+  unsigned old_system_state = system_state; // trigger on system state changes
+  bool configuration_data_written = false;  // trigger writing of EEPROM content
 
   // this is the MAIN data acquisition and processing loop **********************************************
   while (true)
@@ -392,6 +392,7 @@ communicator_runnable (void*)
 	{
 	  if( not configuration_data_written) // need to write the EEPROM content
 	      {
+	      // write all valid EEPROM content packed as one flexible file record
 		  {
 		    uint32_t file_format_version =
 			flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
@@ -408,8 +409,8 @@ communicator_runnable (void*)
 		    flex_file.append_record ( LARUS_DESCRIPTION, (uint32_t *)description, DESCRIPTION_SIZE_BYTES / sizeof( uint32_t));
 		  }
 
+		  // write all valid EEPROM content packed as one flexible file record
 		  {
-		    // write all valid EEPROM content packed as one flexible file record
 #define FLASH_DATA_COPY_SIZE_WORDS 128
 		    uint32_t flash_data_copy[FLASH_DATA_COPY_SIZE_WORDS];
 		    EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> flash_data_file(
@@ -457,9 +458,10 @@ communicator_runnable (void*)
 	    if( flight_event_queue.receive( event, 0))
 		  flex_file.append_record ( FLIGHT_EVENT, &event, sizeof(event));
 	  }
-	}
-    }
-}
+
+	} // log file write loop ****************************************************************************
+    }     // IMU 100Hz loop
+}         // task runnable
 
 #define STACKSIZE 2048
 static uint32_t __ALIGNED(STACKSIZE*sizeof(uint32_t)) stack_buffer[STACKSIZE];
