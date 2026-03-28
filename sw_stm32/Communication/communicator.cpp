@@ -456,7 +456,7 @@ communicator_runnable (void*)
 	  { // record event if any
 	    uint32_t event;
 	    if( flight_event_queue.receive( event, 0))
-		  flex_file.append_record ( FLIGHT_EVENT, &event, sizeof(event));
+		  flex_file.append_record ( FLIGHT_EVENT, &event, 1);
 	  }
 
 	} // log file write loop ****************************************************************************
