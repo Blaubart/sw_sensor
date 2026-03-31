@@ -92,9 +92,11 @@ bool flexible_log_file_implementation_t::write_block (uint32_t *p_data,
 						 uint32_t size_words)
 {
   bool need_to_signal = false;
+
+  RW_lock.lock ();
+
   while (size_words--)
     {
-      RW_lock.lock ();
 
       *write_pointer++ = *p_data++;
 
@@ -120,9 +122,11 @@ bool flexible_log_file_implementation_t::write_block (uint32_t *p_data,
 
 	  need_to_signal = true;
 
-	  RW_lock.release ();
 	}
     }
+
+  RW_lock.release ();
+
   if (need_to_signal)
     signal ();
 
