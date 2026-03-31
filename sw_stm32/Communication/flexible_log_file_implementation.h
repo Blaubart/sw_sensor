@@ -4,6 +4,7 @@
 #include "stdint.h"
 #include "fatfs.h"
 #include "flexible_log_file.h"
+#include "FreeRTOS_wrapper.h"
 
 typedef void ( *FPTR)( void); // declare void -> void function pointer
 
@@ -16,7 +17,8 @@ public:
     file_is_open( false),
     status( FILLING_LOW),
     second_part ( buffer + size_words / 2),
-    signal( _signal)
+    signal( _signal),
+    RW_lock()
   {
   }
 
@@ -64,6 +66,7 @@ private:
   uint32_t status;
   uint32_t *second_part;
   FPTR signal;
+  Mutex RW_lock;
 };
 
 #endif

@@ -180,7 +180,7 @@ communicator_runnable (void*)
   unsigned synchronizer_10Hz = 10; 	// re-sampling 100Hz -> 10Hz
   unsigned GNSS_watchdog = 0;		// monitor incoming GNSS data rate
   unsigned GNSS_LED_count = 0;		// maintain GNSS LED
-  unsigned old_system_state = system_state; // trigger on system state changes
+  unsigned old_system_state = 0; 	// trigger on system state changes
   bool configuration_data_written = false;  // trigger writing of EEPROM content
 
   // this is the MAIN data acquisition and processing loop **********************************************
@@ -327,7 +327,8 @@ communicator_runnable (void*)
 	    {
 	      organizer.cleanup_after_landing ();
 	      perform_after_landing_actions.set ();
-	      configuration_data_written = false;
+
+	      configuration_data_written = false; // needs to be done at next file head
 	    }
 
 	  trigger_CAN ();
@@ -381,15 +382,10 @@ communicator_runnable (void*)
 
       organizer.report_data (state_vector);
 
-      if (system_state != old_system_state)
-	{
-	  old_system_state = system_state;
-	  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
-	}
-
       // write log file ********************************************************************************
       if( flex_file.is_open ()) // data logging is active
 	{
+
 	  if( not configuration_data_written) // need to write the EEPROM content
 	      {
 	      // write all valid EEPROM content packed as one flexible file record
@@ -420,7 +416,18 @@ communicator_runnable (void*)
 		  }
 
 		  configuration_data_written = true;
+
+		  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
+		  old_system_state = system_state;
 	      }
+	  else
+	    {
+	      if (system_state != old_system_state)
+		{
+		  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
+		  old_system_state = system_state;
+		}
+	    }
 
 	  flex_file.append_record ( BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
 

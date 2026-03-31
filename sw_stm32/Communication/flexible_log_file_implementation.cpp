@@ -50,9 +50,13 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
   UINT writtenBytes = 0;
   unsigned size_bytes = (second_part - buffer) * sizeof( uint32_t);
 
+  RW_lock.lock();
+
   if( status & WRITING_LOW)
     {
       ASSERT( not( status & FILLING_LOW));
+      RW_lock.release();
+
       f_write( &out_file, (const char *)buffer, size_bytes, &writtenBytes);
 
 #if ANALYZE_WRITE_PERFORMANCE // using debugger
@@ -63,6 +67,8 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
   else if( ( status & WRITING_HIGH))
     {
       ASSERT( not( status & FILLING_HIGH));
+      RW_lock.release();
+
       f_write( &out_file, (const char *)second_part, size_bytes, &writtenBytes);
 #if ANALYZE_WRITE_PERFORMANCE
       used_size = (write_pointer - buffer) > used_size
@@ -70,43 +76,50 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
 #endif
     }
 
+  RW_lock.lock();
   status &= ~(WRITING_LOW | WRITING_HIGH);
+  RW_lock.release();
 
   return ( size_bytes == writtenBytes);
 }
 
-bool flexible_log_file_implementation_t::write_block (uint32_t *p_data, uint32_t size_words)
+bool flexible_log_file_implementation_t::write_block (uint32_t *p_data,
+						 uint32_t size_words)
 {
   bool need_to_signal = false;
-  while( size_words --)
+  while (size_words--)
     {
-	*write_pointer++ = *p_data++;
+      RW_lock.lock ();
 
-	if( write_pointer >= buffer_end)
-	  {
-	    ASSERT(not (status & WRITING_LOW) )
+      *write_pointer++ = *p_data++;
 
-	    write_pointer = buffer;
+      if (write_pointer >= buffer_end)
+	{
+	  ASSERT(not (status & WRITING_LOW))
 
-	    status &= ~FILLING_HIGH;
-	    status |= FILLING_LOW;
-	    status |= WRITING_HIGH;
+	  write_pointer = buffer;
 
-	    need_to_signal = true;
-	  }
-	else if( write_pointer == second_part)
-	  {
-	    ASSERT( not (status & WRITING_HIGH) );
+	  status &= ~FILLING_HIGH;
+	  status |= FILLING_LOW;
+	  status |= WRITING_HIGH;
 
-	    status &= ~FILLING_LOW;
-	    status |= FILLING_HIGH;
-	    status |= WRITING_LOW;
+	  need_to_signal = true;
+	}
+      else if (write_pointer == second_part)
+	{
+	  ASSERT(not (status & WRITING_HIGH));
 
-	    need_to_signal = true;
-	  }
+	  status &= ~FILLING_LOW;
+	  status |= FILLING_HIGH;
+	  status |= WRITING_LOW;
+
+	  need_to_signal = true;
+
+	  RW_lock.release ();
+	}
     }
-  if( need_to_signal)
-    signal();
+  if (need_to_signal)
+    signal ();
 
   return true;
 }
