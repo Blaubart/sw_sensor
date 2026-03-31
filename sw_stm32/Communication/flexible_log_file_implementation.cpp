@@ -48,9 +48,9 @@ bool flexible_log_file_implementation_t::sync_file( void)
 bool flexible_log_file_implementation_t::flush_buffer( void)
 {
   UINT writtenBytes = 0;
-  unsigned size_bytes = (second_part - buffer) * sizeof( uint32_t);
 
   RW_lock.lock();
+  unsigned size_bytes = (second_part - buffer) * sizeof( uint32_t);
 
   if( status & WRITING_LOW)
     {
@@ -74,6 +74,11 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
       used_size = (write_pointer - buffer) > used_size
 	  ? write_pointer - buffer : used_size;
 #endif
+    }
+  else
+    {
+      status &= ~(WRITING_LOW | WRITING_HIGH);
+      RW_lock.release();
     }
 
   RW_lock.lock();
