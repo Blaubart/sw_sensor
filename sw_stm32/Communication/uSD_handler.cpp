@@ -211,10 +211,8 @@ restart:
 	      write_crash_dump();
 	    }
 
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 	  success = flex_file.flush_buffer();
 	  success &= flex_file.sync_file();
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
 
 	  if( not success)
 	      {
