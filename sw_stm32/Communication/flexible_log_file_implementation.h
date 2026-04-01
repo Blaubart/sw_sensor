@@ -67,6 +67,10 @@ private:
   uint32_t *second_part;
   FPTR signal;
   Mutex RW_lock;
+#if ANALYZE_WRITE_PERFORMANCE
+  int used_size;
+#endif
+
 };
 
 #endif

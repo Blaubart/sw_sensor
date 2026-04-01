@@ -6,10 +6,6 @@
 #include "system_configuration.h"
 #include "signal_flight_event.h"
 
-#if ANALYZE_WRITE_PERFORMANCE
-COMMON int used_size;
-#endif
-
 bool flexible_log_file_implementation_t::open (char *file_name)
 {
   FRESULT fresult;
