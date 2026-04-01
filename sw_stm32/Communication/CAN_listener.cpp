@@ -85,8 +85,12 @@ bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
 	float value = p.data_f[1];
 
 	bool success = write_EEPROM_value( id, value);
-	communicator_command_queue.send( SOME_EEPROM_VALUE_HAS_CHANGED, 1);
 	signal_logger_event( EEPROM_CONFIGURATION_CHANGED | (success ? (id<<8) + 0x10000 : (id<<8)) );
+
+	if( ( id < VARIO_TC) || ( id > MEAN_WIND_TC))
+	  // we need to reset the algorithms because of a significant change
+	  communicator_command_queue.send( SOME_EEPROM_VALUE_HAS_CHANGED, 1);
+
 	return false; // report "nothing read"
       }
       break;
