@@ -237,6 +237,7 @@ communicator_runnable (void*)
 	      vector_average_organizer.destination->zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
+
 	    case MEASURE_CALIB_RIGHT:
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
@@ -244,6 +245,7 @@ communicator_runnable (void*)
 	      vector_average_organizer.destination->zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
+
 	    case MEASURE_CALIB_LEVEL:
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
@@ -251,6 +253,7 @@ communicator_runnable (void*)
 	      vector_average_organizer.destination->zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
+
 	    case SET_SENSOR_ROTATION:
 
 	      // make sure that we have all three measurements
@@ -268,6 +271,7 @@ communicator_runnable (void*)
 	      report_horizon_avalability ();
 	      configuration_data_written = false;
 	      break;
+
 	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
@@ -277,10 +281,14 @@ communicator_runnable (void*)
 	      fine_tune_sensor_attitude = true;
 	      break;
 
-	    case SOME_EEPROM_VALUE_HAS_CHANGED:
-	      organizer.initialize_before_measurement ();
-	      organizer.initialize_after_first_measurement (coordinates, observations);
-	      report_horizon_avalability ();
+	    case TIME_CONSTANT_CHANGED:
+	    case GNSS_CONFIG_CHANGED:
+	      organizer.tune_filters();
+	      configuration_data_written = false;
+	      break;
+
+	    case TUNE_PRESSURE_GAUGES:
+	      organizer.tune_pressure_gauges();
 	      configuration_data_written = false;
 	      break;
 
@@ -460,10 +468,10 @@ communicator_runnable (void*)
 		}
 	    }
 
-	  { // record event if any
+	  { // process event if any
 	    uint32_t event;
 	    if( flight_event_queue.receive( event, 0))
-		  flex_file.append_record ( FLIGHT_EVENT, &event, 1);
+	      flex_file.append_record ( FLIGHT_EVENT, &event, 1);
 	  }
 
 	} // log file write loop ****************************************************************************

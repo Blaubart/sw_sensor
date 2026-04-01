@@ -35,7 +35,9 @@ typedef enum
   MEASURE_CALIB_LEVEL,
   SET_SENSOR_ROTATION,
   FINE_TUNE_CALIB,
-  SOME_EEPROM_VALUE_HAS_CHANGED
+  TIME_CONSTANT_CHANGED,
+  TUNE_PRESSURE_GAUGES,
+  GNSS_CONFIG_CHANGED
 } communicator_command_t;
 
 extern D_GNSS_coordinates_t coordinates;
