@@ -199,6 +199,8 @@ restart:
 	    }
 	}
 
+      unsigned file_sync_counter = 0;
+
       // repeat: fill buffer with data chunks, write it to uSD and copy remaining data to start of buffer
       // this logger loop is synchronized by the communicator object
       while( true)
@@ -212,7 +214,11 @@ restart:
 	    }
 
 	  success = flex_file.flush_buffer();
-	  success &= flex_file.sync_file();
+	  if( ++file_sync_counter >= 8)
+	    {
+	      file_sync_counter = 0;
+	      success &= flex_file.sync_file();
+	    }
 
 	  if( not success)
 	      {
