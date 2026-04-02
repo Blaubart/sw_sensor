@@ -35,11 +35,13 @@ bool flexible_log_file_implementation_t::close( void)
   return true;
 }
 
-bool flexible_log_file_implementation_t::sync_file( void)
+bool flexible_log_file_implementation_t::sync_file (void)
 {
   FRESULT fresult;
+  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
   fresult = f_sync (&out_file);
-  return(fresult == FR_OK);
+  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
+  return (fresult == FR_OK);
 }
 
 bool flexible_log_file_implementation_t::flush_buffer( void)
