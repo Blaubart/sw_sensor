@@ -17,8 +17,7 @@ public:
     file_is_open( false),
     status( FILLING_LOW),
     second_part ( buffer + size_words / 2),
-    signal( _signal),
-    RW_lock()
+    signal( _signal)
   {
   }
 
@@ -66,7 +65,6 @@ private:
   uint32_t status;
   uint32_t *second_part;
   FPTR signal;
-  Mutex RW_lock;
 #if ANALYZE_WRITE_PERFORMANCE
   int used_size;
 #endif

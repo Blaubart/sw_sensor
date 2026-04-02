@@ -49,13 +49,11 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
   UINT written_bytes = 0;
   FRESULT fresult;
 
-  RW_lock.lock();
   unsigned size_bytes = (second_part - buffer) * sizeof( uint32_t);
 
   if( status & WRITING_LOW)
     {
       ASSERT( not( status & FILLING_LOW));
-      RW_lock.release();
 
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
       fresult = f_write( &out_file, (const char *)buffer, size_bytes, &written_bytes);
@@ -75,7 +73,6 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
   else if( ( status & WRITING_HIGH))
     {
       ASSERT( not( status & FILLING_HIGH));
-      RW_lock.release();
 
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
       fresult = f_write( &out_file, (const char *)second_part, size_bytes, &written_bytes);
@@ -94,12 +91,9 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
   else
     {
       status &= ~(WRITING_LOW | WRITING_HIGH);
-      RW_lock.release();
     }
 
-  RW_lock.lock();
   status &= ~(WRITING_LOW | WRITING_HIGH);
-  RW_lock.release();
 
   return ( size_bytes == written_bytes);
 }
@@ -108,8 +102,6 @@ bool flexible_log_file_implementation_t::write_block (uint32_t *p_data,
 						 uint32_t size_words)
 {
   bool need_to_signal = false;
-
-  RW_lock.lock ();
 
   while (size_words--)
     {
@@ -140,8 +132,6 @@ bool flexible_log_file_implementation_t::write_block (uint32_t *p_data,
 
 	}
     }
-
-  RW_lock.release ();
 
   if (need_to_signal)
     signal ();
