@@ -44,6 +44,7 @@
 #include "uSD_helpers.h"
 
 COMMON reminder_flag perform_after_landing_actions;
+COMMON reminder_flag write_configuration_data_now;
 
 extern Semaphore setup_file_handling_completed;
 
@@ -199,6 +200,7 @@ restart:
 	    }
 	}
 
+      write_configuration_data_now.set();
       unsigned file_sync_counter = 0;
 
       // repeat: fill buffer with data chunks, write it to uSD and copy remaining data to start of buffer

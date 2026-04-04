@@ -181,7 +181,6 @@ communicator_runnable (void*)
   unsigned GNSS_watchdog = 0;		// monitor incoming GNSS data rate
   unsigned GNSS_LED_count = 0;		// maintain GNSS LED
   unsigned old_system_state = 0; 	// trigger on system state changes
-  bool configuration_data_written = false;  // trigger writing of EEPROM content
 
   // this is the MAIN data acquisition and processing loop **********************************************
   while (true)
@@ -269,7 +268,7 @@ communicator_runnable (void*)
 	      organizer.initialize_before_measurement ();
 	      organizer.initialize_after_first_measurement (coordinates, observations);
 	      report_horizon_avalability ();
-	      configuration_data_written = false;
+	      write_configuration_data_now.set();
 	      break;
 
 	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
@@ -283,13 +282,13 @@ communicator_runnable (void*)
 
 	    case TIME_CONSTANT_CHANGED:
 	    case GNSS_CONFIG_CHANGED:
-	      organizer.tune_filters();
-	      configuration_data_written = false;
+		organizer.tune_filters();
+		write_configuration_data_now.set();
 	      break;
 
 	    case TUNE_PRESSURE_GAUGES:
-	      organizer.tune_pressure_gauges();
-	      configuration_data_written = false;
+		organizer.tune_pressure_gauges();
+		write_configuration_data_now.set();
 	      break;
 
 	    case NO_COMMAND:
@@ -319,7 +318,7 @@ communicator_runnable (void*)
 		  organizer.initialize_before_measurement ();
 		  organizer.initialize_after_first_measurement (coordinates, observations);
 		  report_horizon_avalability ();
-		  configuration_data_written = false;
+		  write_configuration_data_now.set();
 		}
 	    }
 	}
@@ -335,8 +334,6 @@ communicator_runnable (void*)
 	    {
 	      organizer.cleanup_after_landing ();
 	      perform_after_landing_actions.set ();
-
-	      configuration_data_written = false; // needs to be done at next file head
 	    }
 
 	  trigger_CAN ();
@@ -393,8 +390,8 @@ communicator_runnable (void*)
       // write log file ********************************************************************************
       if( flex_file.is_open ()) // data logging is active
 	{
-
-	  if( not configuration_data_written) // need to write the EEPROM content
+	  bool write_configuration = write_configuration_data_now.test_and_reset();
+	  if( write_configuration) // need to write the EEPROM content
 	      {
 	      // write all valid EEPROM content packed as one flexible file record
 		  {
@@ -422,8 +419,6 @@ communicator_runnable (void*)
 		    flash_data_file.import_all_data( permanent_data_file, false);
 		    flex_file.append_record ( EEPROM_FILE, flash_data_copy, flash_data_file.get_size()/sizeof(uint32_t));
 		  }
-
-		  configuration_data_written = true;
 
 		  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
 		  old_system_state = system_state;
