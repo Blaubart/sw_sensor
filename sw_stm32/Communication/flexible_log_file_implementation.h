@@ -4,6 +4,7 @@
 #include "stdint.h"
 #include "fatfs.h"
 #include "flexible_log_file.h"
+#include "FreeRTOS_wrapper.h"
 
 typedef void ( *FPTR)( void); // declare void -> void function pointer
 
@@ -64,6 +65,10 @@ private:
   uint32_t status;
   uint32_t *second_part;
   FPTR signal;
+#if ANALYZE_WRITE_PERFORMANCE
+  int used_size;
+#endif
+
 };
 
 #endif

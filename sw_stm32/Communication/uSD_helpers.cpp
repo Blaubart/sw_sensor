@@ -47,7 +47,7 @@ extern  uint32_t UNIQUE_ID[4];
 extern SD_HandleTypeDef hsd;
 
 #define MEM_BUFSIZE 4096 // bytes
-COMMON uint8_t __ALIGNED(16) mem_buffer[MEM_BUFSIZE];
+COMMON uint8_t __ALIGNED(32) mem_buffer[MEM_BUFSIZE];
 COMMON flexible_log_file_implementation_t flex_file(
     (uint32_t *)mem_buffer,
     MEM_BUFSIZE / sizeof( uint32_t),
@@ -260,22 +260,11 @@ emergency_exit:
     /* wake watchdog */;
 }
 
-bool write_EEPROM_dump( const char * file_path)
+COMMON uint8_t firmware_SHA256_digest[32];
+
+void make_firmware_digest( void)
 {
-  FRESULT fresult;
-  FIL fp;
-  char buffer[128];
-  char *next = buffer;
   SHA256 sha;
-  int32_t writtenBytes = 0;
-
-  append_string (next, file_path);
-  append_string (next, ".EEPROM");
-
-  fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
-  if (fresult != FR_OK)
-    return fresult;
-
   sha.update( SHA_INITIALIZATION, sizeof( SHA_INITIALIZATION));
 
   extern uint8_t * __fini_array_end;
@@ -288,8 +277,24 @@ bool write_EEPROM_dump( const char * file_path)
       sha.update( block_start, block_end - block_start);
       delay(1); // beware of our watchdog !
     }
-  uint8_t digest[32];
-  sha.make_digest(digest);
+  sha.make_digest(firmware_SHA256_digest);
+}
+
+bool write_EEPROM_dump( const char * file_path)
+{
+  FRESULT fresult;
+  FIL fp;
+  char buffer[128];
+  char *next = buffer;
+  int32_t writtenBytes = 0;
+  SHA256 sha;
+
+  append_string (next, file_path);
+  append_string (next, ".EEPROM");
+
+  fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
+  if (fresult != FR_OK)
+    return fresult;
 
   delay(1); // watchdog ...
 
@@ -300,10 +305,10 @@ bool write_EEPROM_dump( const char * file_path)
   append_string( next, "SHA256(Flash Program) = \r\n");
 
   for( unsigned i=0; i<16; ++i)
-      utox( next, (uint32_t)(digest[i]), 2);
+      utox( next, (uint32_t)(firmware_SHA256_digest[i]), 2);
   newline(next);
   for( unsigned i=0; i<16; ++i)
-      utox( next, (uint32_t)(digest[i+16]), 2);
+      utox( next, (uint32_t)(firmware_SHA256_digest[i+16]), 2);
   newline(next);
 
   (void)f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
@@ -408,6 +413,7 @@ bool write_EEPROM_dump( const char * file_path)
       return fresult; // give up ...
     }
 
+  uint8_t digest[32];
   sha.make_digest(digest);
   next = buffer;
   append_string( next, "SHA256(text above) = \r\n");

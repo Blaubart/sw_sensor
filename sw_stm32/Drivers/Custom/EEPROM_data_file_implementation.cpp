@@ -20,35 +20,31 @@ COMMON Mutex_Wrapper_Type my_mutex( (char *)"MTX_WRAPPER");
 COMMON EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> permanent_data_file;
 extern Queue <flash_write_order> flash_command_queue;
 
-void FLASH_write( uint32_t * dest, uint32_t * source, unsigned n_words)
+void FLASH_write (uint32_t *dest, uint32_t *source, unsigned n_words, bool synchronized)
 {
-#if 0 // asynchronous write
-  flash_write_order cmd;
-  bool result;
-
-  while( n_words --)
+  if (not synchronized)
     {
-    cmd.dest=dest++;
-    cmd.value = *source++;
-    result = flash_command_queue.send( cmd, FLASH_ACCESS_TIMEOUT);
-    ASSERT( result);
+      while (n_words--)
+	  *dest++ = *source++;
     }
-#else // synchronous write, interrupt-synchronized
-  HAL_StatusTypeDef status;
-  status = HAL_FLASH_Unlock();
-  ASSERT(HAL_OK == status);
-
-  while( n_words --)
+  else // synchronous write, interrupt-synchronized
     {
-      status = HAL_FLASH_Program_IT( TYPEPROGRAM_WORD, (uint32_t)dest++, *source++);
-      ASSERT( status == HAL_OK);
-      bool no_timeout = flash_isr_to_task.wait( FLASH_ACCESS_TIMEOUT);
-      ASSERT( no_timeout);
-    }
+      HAL_StatusTypeDef status;
+      status = HAL_FLASH_Unlock ();
+      ASSERT(HAL_OK == status);
 
-  status = HAL_FLASH_Lock();
-  ASSERT(HAL_OK == status);
-#endif
+      while (n_words--)
+	{
+	  status = HAL_FLASH_Program_IT ( TYPEPROGRAM_WORD, (uint32_t) dest++,
+					 *source++);
+	  ASSERT(status == HAL_OK);
+	  bool no_timeout = flash_isr_to_task.wait ( FLASH_ACCESS_TIMEOUT);
+	  ASSERT(no_timeout);
+	}
+
+      status = HAL_FLASH_Lock ();
+      ASSERT(HAL_OK == status);
+    }
 }
 
 //!< test interface for reading

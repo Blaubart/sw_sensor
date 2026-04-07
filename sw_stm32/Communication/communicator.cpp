@@ -36,6 +36,7 @@
 #include "GNSS_driver.h"
 #include "CAN_distributor.h"
 #include "uSD_handler.h"
+#include "uSD_helpers.h"
 #include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "flexible_log_file_implementation.h"
@@ -49,7 +50,12 @@ extern "C" void sync_logger (void);
 
 COMMON Semaphore setup_file_handling_completed(1,0,(char *)"SETUP");
 
-//COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
+COMMON Queue <uint32_t> flight_event_queue(3);
+void signal_logger_event( uint32_t event)
+{
+  flight_event_queue.send( event, 1);
+}
+
 COMMON GNSS_type GNSS ( coordinates);
 
 COMMON Queue < communicator_command_t> communicator_command_queue(2);
@@ -171,39 +177,15 @@ communicator_runnable (void*)
   NMEA_task.resume ();
   CAN_task.resume ();
 
-  unsigned synchronizer_10Hz = 10; // re-sampling 100Hz -> 10Hz
-  unsigned GNSS_watchdog = 0;
-  unsigned GNSS_LED_count = 0;
-  unsigned old_system_state = system_state;
-  bool configuration_data_written = false;
+  unsigned synchronizer_10Hz = 10; 	// re-sampling 100Hz -> 10Hz
+  unsigned GNSS_watchdog = 0;		// monitor incoming GNSS data rate
+  unsigned GNSS_LED_count = 0;		// maintain GNSS LED
+  unsigned old_system_state = 0; 	// trigger on system state changes
 
   // this is the MAIN data acquisition and processing loop **********************************************
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
-
-      if (not configuration_data_written && flex_file.is_open ())
-	{
-	  configuration_data_written = true;
-
-	  // we can now start using the log file
-	  // so: write the necessary start information
-	    {
-	      uint32_t file_format_version =
-		  flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
-	      flex_file.append_record (FILE_FORMAT_VERSION, &file_format_version, 1);
-	    }
-
-	  // find all used EEPROM records and write them into the flex file
-	  for (EEPROM_file_system_node::ID_t id = 1;
-	      id < LOWEST_UNUSED_EEPROM_ID; ++id)
-	    {
-	      EEPROM_file_system_node *node = permanent_data_file.find_datum (
-		  id);
-	      if (node)
-		flex_file.append_record (EEPROM_FILE_RECORD, (uint32_t*) node, node->size);
-	    }
-	}
 
       if (GNSS_new_data_ready) // triggered after 75ms or 100ms, GNSS-dependent
 	{
@@ -243,6 +225,8 @@ communicator_runnable (void*)
       communicator_command_t command;
       if (communicator_command_queue.receive (command, 0))
 	{
+	  signal_logger_event( CAN_COMMAND_RECEIVED | (command << 8));
+
 	  switch (command)
 	    {
 	    case MEASURE_CALIB_LEFT:
@@ -252,6 +236,7 @@ communicator_runnable (void*)
 	      vector_average_organizer.destination->zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
+
 	    case MEASURE_CALIB_RIGHT:
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
@@ -259,6 +244,7 @@ communicator_runnable (void*)
 	      vector_average_organizer.destination->zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
+
 	    case MEASURE_CALIB_LEVEL:
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
@@ -266,6 +252,7 @@ communicator_runnable (void*)
 	      vector_average_organizer.destination->zero ();
 	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
 	      break;
+
 	    case SET_SENSOR_ROTATION:
 
 	      // make sure that we have all three measurements
@@ -281,7 +268,9 @@ communicator_runnable (void*)
 	      organizer.initialize_before_measurement ();
 	      organizer.initialize_after_first_measurement (coordinates, observations);
 	      report_horizon_avalability ();
+	      write_configuration_data_now.set();
 	      break;
+
 	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
 	      vector_average_organizer.source = &(observations.acc);
 	      vector_average_organizer.destination =
@@ -291,10 +280,15 @@ communicator_runnable (void*)
 	      fine_tune_sensor_attitude = true;
 	      break;
 
-	    case SOME_EEPROM_VALUE_HAS_CHANGED:
-	      organizer.initialize_before_measurement ();
-	      organizer.initialize_after_first_measurement (coordinates, observations);
-	      report_horizon_avalability ();
+	    case TIME_CONSTANT_CHANGED:
+	    case GNSS_CONFIG_CHANGED:
+		organizer.tune_filters();
+		write_configuration_data_now.set();
+	      break;
+
+	    case TUNE_PRESSURE_GAUGES:
+		organizer.tune_pressure_gauges();
+		write_configuration_data_now.set();
 	      break;
 
 	    case NO_COMMAND:
@@ -324,6 +318,7 @@ communicator_runnable (void*)
 		  organizer.initialize_before_measurement ();
 		  organizer.initialize_after_first_measurement (coordinates, observations);
 		  report_horizon_avalability ();
+		  write_configuration_data_now.set();
 		}
 	    }
 	}
@@ -384,7 +379,7 @@ communicator_runnable (void*)
 	  break;
 	}
 
-      // service the red error LED
+      // service the red error LED ********************************************************************
       HAL_GPIO_WritePin (
 	  LED_ERROR_GPIO_Port,
 	  LED_ERROR_Pin,
@@ -392,17 +387,52 @@ communicator_runnable (void*)
 
       organizer.report_data (state_vector);
 
-      if (system_state != old_system_state)
+      // write log file ********************************************************************************
+      if( flex_file.is_open ()) // data logging is active
 	{
-	  old_system_state = system_state;
-	  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
-	}
+	  bool write_configuration = write_configuration_data_now.test_and_reset();
+	  if( write_configuration) // need to write the EEPROM content
+	      {
+	      // write all valid EEPROM content packed as one flexible file record
+		  {
+		    uint32_t file_format_version =
+			flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
+		    flex_file.append_record ( FILE_FORMAT_VERSION, &file_format_version, 1);
 
-      // write log file
-      if (configuration_data_written && flex_file.is_open ())
-	{
-	  flex_file.append_record (
-	      BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
+		    // write hardware, firmware id and FLASH SHA256
+#define DESCRIPTION_SIZE_BYTES (32+sizeof( uint32_t)*4+32)
+		    uint8_t description[DESCRIPTION_SIZE_BYTES];
+		    memset( description, 0, 32);
+		    strcpy( (char *)description, GIT_TAG_INFO); // fw string
+		    extern  uint32_t UNIQUE_ID[4];
+		    memcpy( description+32, UNIQUE_ID, sizeof( uint32_t)*4); // hw ID
+		    memcpy( description+32+16, firmware_SHA256_digest, 32); // flash program SHA256 digest
+		    flex_file.append_record ( LARUS_DESCRIPTION, (uint32_t *)description, DESCRIPTION_SIZE_BYTES / sizeof( uint32_t));
+		  }
+
+		  // write all valid EEPROM content packed as one flexible file record
+		  {
+#define FLASH_DATA_COPY_SIZE_WORDS 128
+		    uint32_t flash_data_copy[FLASH_DATA_COPY_SIZE_WORDS];
+		    EEPROM_file_system <LOWEST_UNUSED_EEPROM_ID> flash_data_file(
+			(EEPROM_file_system_node *)flash_data_copy, (EEPROM_file_system_node *)flash_data_copy+FLASH_DATA_COPY_SIZE_WORDS);
+		    flash_data_file.import_all_data( permanent_data_file, false);
+		    flex_file.append_record ( EEPROM_FILE, flash_data_copy, flash_data_file.get_size()/sizeof(uint32_t));
+		  }
+
+		  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
+		  old_system_state = system_state;
+	      }
+	  else
+	    {
+	      if (system_state != old_system_state)
+		{
+		  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
+		  old_system_state = system_state;
+		}
+	    }
+
+	  flex_file.append_record ( BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
 
 	  if (system_state & EXTERNAL_MAGNETOMETER_AVAILABLE)
 	    {
@@ -420,24 +450,28 @@ communicator_runnable (void*)
 		case SAT_FIX:
 		default:
 		  flex_file.append_record (
-		      GNSS_DATA, (uint32_t*) &coordinates,
-		      sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
+		      GNSS_DATA, (uint32_t*) &coordinates,  sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
 		  break;
 		case SAT_FIX | SAT_HEADING:
 		  flex_file.append_record (
-		      D_GNSS_DATA, (uint32_t*) &coordinates,
-		      sizeof(D_GNSS_coordinates_t) / sizeof(uint32_t));
+		      D_GNSS_DATA, (uint32_t*) &coordinates, sizeof(D_GNSS_coordinates_t) / sizeof(uint32_t));
 		  break;
-		case SAT_FIX_NONE:
+		case SAT_FIX_NONE: // need to log the GNSS status like number of visible satellites etc
 		  flex_file.append_record (
-		      GNSS_DATA, (uint32_t*) &coordinates,
-		      sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
+		      GNSS_DATA, (uint32_t*) &coordinates,   sizeof(GNSS_coordinates_t) / sizeof(uint32_t));
 		  break;
 		}
 	    }
-	}
-    }
-}
+
+	  { // process event if any
+	    uint32_t event;
+	    if( flight_event_queue.receive( event, 0))
+	      flex_file.append_record ( FLIGHT_EVENT, &event, 1);
+	  }
+
+	} // log file write loop ****************************************************************************
+    }     // IMU 100Hz loop
+}         // task runnable
 
 #define STACKSIZE 2048
 static uint32_t __ALIGNED(STACKSIZE*sizeof(uint32_t)) stack_buffer[STACKSIZE];

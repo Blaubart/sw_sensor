@@ -33,6 +33,7 @@
 #include "system_state.h"
 #include "communicator.h"
 #include "uSD_handler.h"
+#include "signal_flight_event.h"
 
 #define CAN_Id_Send_Config_Value 0x12f
 
@@ -83,8 +84,35 @@ bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
       {
 	float value = p.data_f[1];
 
-	(void) write_EEPROM_value( id, value); // no way to report errors here ...
-	communicator_command_queue.send( SOME_EEPROM_VALUE_HAS_CHANGED, 1);
+	bool success = write_EEPROM_value( id, value);
+	signal_logger_event( EEPROM_CONFIGURATION_CHANGED | (success ? (id<<8) + 0x10000 : (id<<8)) );
+
+	if( success)
+	  // we need to reset the algorithms because of a significant change
+	  {
+	    switch( id)
+	    {
+	      case VARIO_TC:
+	      case VARIO_P_TC:
+	      case VARIO_INT_TC:
+	      case WIND_TC:
+		  communicator_command_queue.send( TIME_CONSTANT_CHANGED, 1);
+		break;
+	      case ANT_BASELENGTH:
+	      case ANT_SLAVE_DOWN:
+	      case ANT_SLAVE_RIGHT:
+		  communicator_command_queue.send( GNSS_CONFIG_CHANGED, 1);
+		break;
+	      case PITOT_OFFSET:
+	      case PITOT_SPAN:
+	      case QNH_OFFSET:
+		  communicator_command_queue.send( TUNE_PRESSURE_GAUGES, 1);
+		break;
+	      default:
+		break;
+	    }
+	  }
+
 	return false; // report "nothing read"
       }
       break;

@@ -32,11 +32,10 @@
 #include "CAN_output.h"
 
 #define MAX_LEN 40
-COMMON char rxNMEASentence[MAX_LEN];
-COMMON int PLARScnt = 0;
 
 void NMEA_listener_task_runnable( void *)
 {
+  char rxNMEASentence[MAX_LEN];
   delay(5000); // allow data acquisition setup
   char rxByte;
   int i = 0;
@@ -73,12 +72,14 @@ void NMEA_listener_task_runnable( void *)
 
 		  if(true == NMEA_checksum(rxNMEASentence))
 		    {
+//		      acquire_privileges(); // otherwise atof() will trigger an MPU fault !
+
 		      rxNMEASentence[len-2] = 0; // Cut the checksum from the sentence for ASCII parsing
 
 		      if (strncmp(rxNMEASentence,"$PLARS,H,MC,",12) == 0)
 			{
 			  ptr = &rxNMEASentence[12];
-			  value = atof(ptr);
+			  value = my_atof(ptr);
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_MC;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
@@ -87,7 +88,7 @@ void NMEA_listener_task_runnable( void *)
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BAL,",13) == 0)
 			{
 			  ptr = &rxNMEASentence[13];
-			  value = atof(ptr);
+			  value = my_atof(ptr);
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BALLAST_FRACTION;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
@@ -96,7 +97,7 @@ void NMEA_listener_task_runnable( void *)
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BUGS,",14) == 0)
 			{
 			  ptr = &rxNMEASentence[14];
-			  value = atof(ptr);
+			  value = my_atof(ptr);
 			  if(value < 0.0f)
 			    {
 			      value = 0;
@@ -114,7 +115,7 @@ void NMEA_listener_task_runnable( void *)
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,QNH,",13) == 0)
 			{
 			  ptr = &rxNMEASentence[13];
-			  value = atof(ptr);
+			  value = my_atof(ptr);
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_QNH;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
@@ -144,6 +145,7 @@ void NMEA_listener_task_runnable( void *)
 			  can_packet.data_b[2] = 0; //SpeedToFly/cruising mode on can
 			  CAN_enqueue(can_packet, portMAX_DELAY);
 			}
+//		      drop_privileges();
 		    }
 		  i = 0;
 		  len = 0;

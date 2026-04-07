@@ -44,6 +44,7 @@
 #include "uSD_helpers.h"
 
 COMMON reminder_flag perform_after_landing_actions;
+COMMON reminder_flag write_configuration_data_now;
 
 extern Semaphore setup_file_handling_completed;
 
@@ -60,6 +61,8 @@ extern RestrictedTask uSD_handler_task;
 //!< this executable takes care of all uSD reading and writing
 void uSD_handler_runnable (void*)
 {
+  make_firmware_digest();
+
 restart:
 
   HAL_SD_DeInit (&hsd);
@@ -197,6 +200,9 @@ restart:
 	    }
 	}
 
+      write_configuration_data_now.set();
+      unsigned file_sync_counter = 0;
+
       // repeat: fill buffer with data chunks, write it to uSD and copy remaining data to start of buffer
       // this logger loop is synchronized by the communicator object
       while( true)
@@ -209,10 +215,12 @@ restart:
 	      write_crash_dump();
 	    }
 
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 	  success = flex_file.flush_buffer();
-	  success &= flex_file.sync_file();
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
+	  if( ++file_sync_counter >= 8)
+	    {
+	      file_sync_counter = 0;
+	      success &= flex_file.sync_file();
+	    }
 
 	  if( not success)
 	      {

@@ -260,36 +260,6 @@ void HAL_SD_RxCpltCallback(SD_HandleTypeDef *hsd)
   BSP_SD_ReadCpltCallback();
 }
 
-/* USER CODE BEGIN CallBacksSection_C */
-/**
-  * @brief BSP SD Abort callback
-  * @retval None
-  * @note empty (up to the user to fill it in or to remove it if useless)
-  */
-__weak void BSP_SD_AbortCallback(void)
-{
-
-}
-
-/**
-  * @brief BSP Tx Transfer completed callback
-  * @retval None
-  * @note empty (up to the user to fill it in or to remove it if useless)
-  */
-__weak void BSP_SD_WriteCpltCallback(void)
-{
-
-}
-
-/**
-  * @brief BSP Rx Transfer completed callback
-  * @retval None
-  * @note empty (up to the user to fill it in or to remove it if useless)
-  */
-__weak void BSP_SD_ReadCpltCallback(void)
-{
-
-}
 /* USER CODE END CallBacksSection_C */
 #endif
 
