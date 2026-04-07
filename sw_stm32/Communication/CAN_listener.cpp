@@ -220,7 +220,7 @@ void CAN_listener_task_runnable (void*)
 	    switch (p.data_h[0])
 	      {
 	      case SYSWIDECONFIG_ITEM_ID_MC:
-		latest_mc = p.data_f[1];
+		latest_mc = CLIP( p.data_f[1], 0.0f, 5.0f);
 		new_mc = true;
 		break;
 
@@ -230,7 +230,7 @@ void CAN_listener_task_runnable (void*)
 		break;
 
 	      case SYSWIDECONFIG_ITEM_ID_QNH:
-		latest_qnh = p.data_f[1];
+		latest_qnh = CLIP( p.data_f[1], 87000.0f, 110000.0f);
 		new_qnh = true;
 		break;
 
