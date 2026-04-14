@@ -358,46 +358,72 @@ bool write_EEPROM_dump( const char * file_path)
 	}
       }
 
-  float32_t mag_calib_param[4*3];
+      {
+      float32_t mag_calib_param[4*3];
 
-  if( permanent_data_file.retrieve_data( MAG_SENSOR_XFER_MATRIX, 4*3, (uint32_t *)mag_calib_param))
-    {
-      for( unsigned i=0; i< 4*3; ++i)
+      if( permanent_data_file.retrieve_data( MAG_SENSOR_XFER_MATRIX, 4*3, (uint32_t *)mag_calib_param))
 	{
-	  next = buffer;
-	  append_string( next, "Mag_");
-	  utox( next, i, 1);
-	  append_string( next, " = ");
-	  next = my_ftoa (next, mag_calib_param[i]);
-	  newline( next);
-	  sha.update( (uint8_t *)buffer, next-buffer);
-	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
-	  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+	  for( unsigned i=0; i< 4*3; ++i)
 	    {
-	      f_close(&fp);
-	      return fresult; // give up ...
+	      next = buffer;
+	      append_string( next, "Mag_");
+	      utox( next, i, 1);
+	      append_string( next, " = ");
+	      next = my_ftoa (next, mag_calib_param[i]);
+	      newline( next);
+	      sha.update( (uint8_t *)buffer, next-buffer);
+	      fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+	      if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+		{
+		  f_close(&fp);
+		  return fresult; // give up ...
+		}
 	    }
 	}
-    }
 
-  if( permanent_data_file.retrieve_data( EXT_MAG_SENSOR_XFER_MATRIX, 4*3, (uint32_t *)mag_calib_param))
-    {
-      for( unsigned i=0; i< 4*3; ++i)
+      if( permanent_data_file.retrieve_data( EXT_MAG_SENSOR_XFER_MATRIX, 4*3, (uint32_t *)mag_calib_param))
 	{
-	  next = buffer;
-	  append_string( next, "XMag_");
-	  utox( next, i, 1);
-	  append_string( next, " = ");
-	  next = my_ftoa (next, mag_calib_param[i]);
-	  newline( next);
-	  sha.update( (uint8_t *)buffer, next-buffer);
-	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
-	  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+	  for( unsigned i=0; i< 4*3; ++i)
 	    {
-	      f_close(&fp);
-	      return fresult; // give up ...
+	      next = buffer;
+	      append_string( next, "XMag_");
+	      utox( next, i, 1);
+	      append_string( next, " = ");
+	      next = my_ftoa (next, mag_calib_param[i]);
+	      newline( next);
+	      sha.update( (uint8_t *)buffer, next-buffer);
+	      fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+	      if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+		{
+		  f_close(&fp);
+		  return fresult; // give up ...
+		}
 	    }
 	}
+
+      {
+      float32_t acc_calib_param[6];
+
+      if( permanent_data_file.retrieve_data( ACCELEROMETER_CALIBRATION, 6, (uint32_t *)acc_calib_param))
+	{
+	  for( unsigned i=0; i < 6; ++i)
+	    {
+	      next = buffer;
+	      append_string( next, "Acc_");
+	      utox( next, i, 1);
+	      append_string( next, " = ");
+	      next = my_ftoa (next, acc_calib_param[i]);
+	      newline( next);
+	      sha.update( (uint8_t *)buffer, next-buffer);
+	      fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+	      if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+		{
+		  f_close(&fp);
+		  return fresult; // give up ...
+		}
+	    }
+	}
+      }
     }
 
   uint16_t option = *(uint16_t *) 0x1fffc000;
@@ -580,6 +606,7 @@ bool read_software_update (void)
       if (last_block_read)
 	{
 	  HAL_FLASH_Lock ();
+	  f_close (&the_file);
 	  delay (100); // wait until uSD operations are finished
 	  fresult = f_mount (0, "", 0); // unmount file system
 	  delay (100); // wait until uSD operations are finished
