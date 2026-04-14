@@ -26,19 +26,7 @@
 
 #include "data_structures.h"
 #include "reminder_flag.h"
-
-typedef enum
-{
-  NO_COMMAND,
-  MEASURE_CALIB_LEFT,
-  MEASURE_CALIB_RIGHT,
-  MEASURE_CALIB_LEVEL,
-  SET_SENSOR_ROTATION,
-  FINE_TUNE_CALIB,
-  TIME_CONSTANT_CHANGED,
-  TUNE_PRESSURE_GAUGES,
-  GNSS_CONFIG_CHANGED
-} communicator_command_t;
+#include "communicator_command.h"
 
 extern D_GNSS_coordinates_t coordinates;
 extern measurement_data_t observations;
