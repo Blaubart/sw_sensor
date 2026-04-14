@@ -225,7 +225,7 @@ communicator_runnable (void*)
 	   }
 	}
 
-      bool significant_configuration_change = organizer.manage_calibration_in_progress( coordinates, observations);
+      bool significant_configuration_change = organizer.manage_attitude_setup_in_progress( coordinates, observations);
 
       if( significant_configuration_change)
 	{
