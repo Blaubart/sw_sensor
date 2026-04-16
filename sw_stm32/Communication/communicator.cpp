@@ -66,14 +66,6 @@ extern RestrictedTask communicator_task;
 static ROM bool TRUE=true;
 static ROM bool FALSE=false;
 
-typedef struct
-{
-  float3vector * source;
-  float3vector * destination;
-  float3vector sum;
-  unsigned counter;
-} vector_average_organizer_t;
-
 void report_horizon_avalability( void)
 {
   if( configuration (HORIZON) )
@@ -103,7 +95,6 @@ void
 communicator_runnable (void*)
 {
   bool have_first_GNSS_fix = false;
-  bool fine_tune_sensor_attitude = false;
 
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait ();
@@ -111,9 +102,6 @@ communicator_runnable (void*)
   int64_t time = getTime_usec();
 
   report_horizon_avalability ();
-
-  vector_average_organizer_t vector_average_organizer = { 0 };
-  vector_average_collection_t vector_average_collection = { 0 };
 
   organizer_t organizer;
   organizer.initialize_before_measurement ();
@@ -223,104 +211,26 @@ communicator_runnable (void*)
 
       // service external commands if any ***************************************************************
       communicator_command_t command;
+
       if (communicator_command_queue.receive (command, 0))
 	{
-	  signal_logger_event( CAN_COMMAND_RECEIVED | (command << 8));
+	 signal_logger_event( CAN_COMMAND_RECEIVED | (command << 8));
 
-	  switch (command)
-	    {
-	    case MEASURE_CALIB_LEFT:
-	      vector_average_organizer.source = &(observations.acc);
-	      vector_average_organizer.destination =
-		  &(vector_average_collection.acc_observed_left);
-	      vector_average_organizer.destination->zero ();
-	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
-	      break;
+	 bool significant_configuration_change = organizer.on_command( command, coordinates, observations);
 
-	    case MEASURE_CALIB_RIGHT:
-	      vector_average_organizer.source = &(observations.acc);
-	      vector_average_organizer.destination =
-		  &(vector_average_collection.acc_observed_right);
-	      vector_average_organizer.destination->zero ();
-	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
-	      break;
-
-	    case MEASURE_CALIB_LEVEL:
-	      vector_average_organizer.source = &(observations.acc);
-	      vector_average_organizer.destination =
-		  &(vector_average_collection.acc_observed_level);
-	      vector_average_organizer.destination->zero ();
-	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
-	      break;
-
-	    case SET_SENSOR_ROTATION:
-
-	      // make sure that we have all three measurements
-	      if (vector_average_collection.acc_observed_left.abs () < 0.001f)
-		break;
-	      if (vector_average_collection.acc_observed_right.abs () < 0.001f)
-		break;
-	      if (vector_average_collection.acc_observed_level.abs () < 0.001f)
-		break;
-
-	      organizer.update_sensor_orientation_data (
-		  vector_average_collection);
-	      organizer.initialize_before_measurement ();
-	      organizer.initialize_after_first_measurement (coordinates, observations);
-	      report_horizon_avalability ();
-	      write_configuration_data_now.set();
-	      break;
-
-	    case FINE_TUNE_CALIB: // names "straight flight" in Larus Display Menu
-	      vector_average_organizer.source = &(observations.acc);
-	      vector_average_organizer.destination =
-		  &(vector_average_collection.acc_observed_level);
-	      vector_average_organizer.destination->zero ();
-	      vector_average_organizer.counter = VECTOR_AVERAGE_COUNT_SETUP;
-	      fine_tune_sensor_attitude = true;
-	      break;
-
-	    case TIME_CONSTANT_CHANGED:
-	    case GNSS_CONFIG_CHANGED:
-		organizer.tune_filters();
-		write_configuration_data_now.set();
-	      break;
-
-	    case TUNE_PRESSURE_GAUGES:
-		organizer.tune_pressure_gauges();
-		write_configuration_data_now.set();
-	      break;
-
-	    case NO_COMMAND:
-	      break;
-	    }
+	 if( significant_configuration_change)
+	   {
+	     report_horizon_avalability ();
+	     write_configuration_data_now.set();
+	   }
 	}
 
-      // vector averaging in case of ground or air level calibration activity *********************************
-      if (vector_average_organizer.counter != 0)
+      bool significant_configuration_change = organizer.manage_attitude_setup_in_progress( coordinates, observations);
+
+      if( significant_configuration_change)
 	{
-	  vector_average_organizer.sum += *(vector_average_organizer.source);
-	  --vector_average_organizer.counter;
-
-	  // if measurement complete now
-	  if (vector_average_organizer.counter == 0)
-	    {
-	      float inverse_count = 1.0f / VECTOR_AVERAGE_COUNT_SETUP;
-	      *(vector_average_organizer.destination) =
-		  vector_average_organizer.sum * inverse_count;
-
-	      // in this case we do not wait for another command but re-calculate immediately
-	      if (fine_tune_sensor_attitude)
-		{
-		  fine_tune_sensor_attitude = false;
-		  organizer.fine_tune_sensor_orientation (
-		      vector_average_collection);
-		  organizer.initialize_before_measurement ();
-		  organizer.initialize_after_first_measurement (coordinates, observations);
-		  report_horizon_avalability ();
-		  write_configuration_data_now.set();
-		}
-	    }
+	  report_horizon_avalability ();
+	  write_configuration_data_now.set();
 	}
 
       // slow 10Hz update and landing detection *********************************************************
@@ -329,14 +239,12 @@ communicator_runnable (void*)
 	{
 	  synchronizer_10Hz = 10;
 
-	  bool landing_detected_here = organizer.update_at_10Hz (coordinates, observations);
-	  if (landing_detected_here)
-	    {
-	      organizer.cleanup_after_landing ();
-	      perform_after_landing_actions.set ();
-	    }
+	  bool landing_detected_here = organizer.update_at_10Hz ( coordinates, observations);
 
-	  trigger_CAN ();
+	  if (landing_detected_here)
+	      perform_after_landing_actions.set ();
+
+	  trigger_CAN (); // we have new information, deliver it NOW !
 	}
 
       // service the GNSS LED ****************************************************************************
