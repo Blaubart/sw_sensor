@@ -78,6 +78,8 @@ extern RestrictedTask uSD_handler_task; // will come downwards ...
 //!< write crash dump file and force MPU reset via watchdog
 void write_crash_dump( void)
 {
+  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
+
   FRESULT fresult;
   FIL fp;
   char *buffer = (char *)mem_buffer; // use global buffer here
