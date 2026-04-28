@@ -78,6 +78,8 @@ extern RestrictedTask uSD_handler_task; // will come downwards ...
 //!< write crash dump file and force MPU reset via watchdog
 void write_crash_dump( void)
 {
+  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
+
   FRESULT fresult;
   FIL fp;
   char *buffer = (char *)mem_buffer; // use global buffer here
@@ -203,8 +205,6 @@ void write_crash_dump( void)
   if (fresult != FR_OK)
     goto emergency_exit;
 
-  delay( 100);
-
 #if configUSE_TRACE_FACILITY // ************************************************
 
 extern RecorderDataType myTraceBuffer;
@@ -229,8 +229,6 @@ extern RecorderDataType myTraceBuffer;
   fresult = f_close(&fp);
   if (fresult != FR_OK)
     goto emergency_exit;
-
-  delay( 100);
 
 #endif // ************************************************************************
 
@@ -295,8 +293,6 @@ bool write_EEPROM_dump( const char * file_path)
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
     return fresult;
-
-  delay(1); // watchdog ...
 
   sha.reset();
   sha.update( SHA_INITIALIZATION, sizeof( SHA_INITIALIZATION));

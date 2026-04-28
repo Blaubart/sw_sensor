@@ -59,7 +59,12 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
       fresult = f_write( &out_file, (const char *)buffer, size_bytes, &written_bytes);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
 
+#if 0 // debug version
       ASSERT(( fresult == FR_OK) && (written_bytes == size_bytes));
+#else
+      if( not (( fresult == FR_OK) && (written_bytes == size_bytes)))
+	block_input();
+#endif
 
 #if ANALYZE_WRITE_PERFORMANCE // using debugger
       if( (write_pointer - second_part) > used_size)
@@ -78,7 +83,12 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
       fresult = f_write( &out_file, (const char *)second_part, size_bytes, &written_bytes);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
 
+#if 0 // debug version
       ASSERT(( fresult == FR_OK) && (written_bytes == size_bytes));
+#else
+      if( not (( fresult == FR_OK) && (written_bytes == size_bytes)))
+	block_input();
+#endif
 
 #if ANALYZE_WRITE_PERFORMANCE
       if( (write_pointer - buffer) > used_size)
