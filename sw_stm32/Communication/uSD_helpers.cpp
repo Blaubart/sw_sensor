@@ -205,8 +205,6 @@ void write_crash_dump( void)
   if (fresult != FR_OK)
     goto emergency_exit;
 
-  delay( 100);
-
 #if configUSE_TRACE_FACILITY // ************************************************
 
 extern RecorderDataType myTraceBuffer;
@@ -231,8 +229,6 @@ extern RecorderDataType myTraceBuffer;
   fresult = f_close(&fp);
   if (fresult != FR_OK)
     goto emergency_exit;
-
-  delay( 100);
 
 #endif // ************************************************************************
 
@@ -298,8 +294,6 @@ bool write_EEPROM_dump( const char * file_path)
   if (fresult != FR_OK)
     return fresult;
 
-  delay(1); // watchdog  ! ...
-
   sha.reset();
   sha.update( SHA_INITIALIZATION, sizeof( SHA_INITIALIZATION));
 
@@ -312,8 +306,6 @@ bool write_EEPROM_dump( const char * file_path)
   for( unsigned i=0; i<16; ++i)
       utox( next, (uint32_t)(firmware_SHA256_digest[i+16]), 2);
   newline(next);
-
-  delay(1); // watchdog  ! ...
 
   (void)f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
   sha.update( (uint8_t *)buffer, next-buffer);
@@ -361,8 +353,6 @@ bool write_EEPROM_dump( const char * file_path)
 	    }
 	}
       }
-
-  delay(1); // watchdog  ! ...
 
       {
       float32_t mag_calib_param[4*3];
