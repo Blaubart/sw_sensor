@@ -298,7 +298,7 @@ bool write_EEPROM_dump( const char * file_path)
   if (fresult != FR_OK)
     return fresult;
 
-  delay(1); // watchdog ...
+  delay(1); // watchdog  ! ...
 
   sha.reset();
   sha.update( SHA_INITIALIZATION, sizeof( SHA_INITIALIZATION));
@@ -312,6 +312,8 @@ bool write_EEPROM_dump( const char * file_path)
   for( unsigned i=0; i<16; ++i)
       utox( next, (uint32_t)(firmware_SHA256_digest[i+16]), 2);
   newline(next);
+
+  delay(1); // watchdog  ! ...
 
   (void)f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
   sha.update( (uint8_t *)buffer, next-buffer);
@@ -359,6 +361,8 @@ bool write_EEPROM_dump( const char * file_path)
 	    }
 	}
       }
+
+  delay(1); // watchdog  ! ...
 
       {
       float32_t mag_calib_param[4*3];

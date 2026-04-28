@@ -203,6 +203,8 @@ restart:
       write_configuration_data_now.set();
       unsigned file_sync_counter = 0;
 
+      uSD_handler_task.set_priority( REGULAR_LOGGER_PRIORITY);
+
       // repeat: fill buffer with data chunks, write it to uSD and copy remaining data to start of buffer
       // this logger loop is synchronized by the communicator object
       while( true)
