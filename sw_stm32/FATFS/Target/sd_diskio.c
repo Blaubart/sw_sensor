@@ -153,6 +153,7 @@ static int SD_CheckStatusWithTimeout(uint32_t timeout)
     {
       return 0;
     }
+    vTaskDelay(1);
   }
 
   return -1;
@@ -313,6 +314,7 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 #endif
                 break;
               }
+              vTaskDelay(1);
             }
 #if (osCMSIS < 0x20000U)
           }
@@ -362,6 +364,7 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
                   {
                     break;
                   }
+                  vTaskDelay(1);
                 }
 
                 if (ret != MSD_OK)
@@ -481,6 +484,7 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
             res = RES_OK;
             break;
           }
+          vTaskDelay(1);
         }
 #if (osCMSIS < 0x20000U)
       }
@@ -536,6 +540,8 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
                   {
                     break;
                   }
+
+                  vTaskDelay(1);
                 }
 
                 if (ret != MSD_OK)
