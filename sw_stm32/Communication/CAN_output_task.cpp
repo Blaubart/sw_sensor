@@ -25,6 +25,7 @@
 #include "FreeRTOS_wrapper.h"
 #include "CAN_output.h"
 #include "communicator.h"
+#include "system_state.h"
 
 COMMON Queue <CANpacket> CAN_pipeline( 5);
 
@@ -37,7 +38,7 @@ void CAN_task_runnable( void *)
 {
   suspend();
 
-  bool horizon_available = configuration( HORIZON);
+  bool horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
   unsigned decimator_1_second=10;
 
   delay(5000); // allow data acquisition setup

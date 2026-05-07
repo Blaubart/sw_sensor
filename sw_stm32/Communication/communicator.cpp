@@ -68,7 +68,9 @@ static ROM bool FALSE=false;
 
 void report_horizon_avalability( void)
 {
-  if( configuration (HORIZON) )
+  union{ float f; unsigned u;} horizon;
+  horizon.f = configuration (HORIZON);
+  if( horizon.u  < (FAT_time >> 16))
 	update_system_state_clear( HORIZON_NOT_AVAILABLE);
   else
 	update_system_state_set( HORIZON_NOT_AVAILABLE);
@@ -190,6 +192,7 @@ communicator_runnable (void*)
 	      have_first_GNSS_fix = true;
 	      organizer.update_magnetic_induction_data (coordinates.latitude,
 							coordinates.longitude);
+	      report_horizon_avalability();
 	    }
 
 	  GNSS_watchdog = 0;
