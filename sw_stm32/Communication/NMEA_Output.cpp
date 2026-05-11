@@ -46,8 +46,7 @@ static void NMEA_runnable (void* data)
   bool success;
   suspend(); // and wait until the communicator wakes us up
 
-  bool horizon_available = configuration( HORIZON);
-
+  bool horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
 
 #if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
@@ -96,6 +95,9 @@ re_initialize: // in case of USART hangup
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
       NMEA_buf.length = 0; // start at the beginning of the buffer
+
+      horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
+
       format_NMEA_string_fast( state_vector, NMEA_buf, horizon_available);
 #if NMEA_DECIMATION_RATIO == 0
       GNSS_data_guard.lock();
