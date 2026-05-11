@@ -29,6 +29,7 @@
 #include "communicator_command.h"
 
 extern D_GNSS_coordinates_t coordinates;
+extern D_GNSS_accuracy_t accuracy;
 extern measurement_data_t observations;
 extern float3vector external_magnetometer;
 extern state_vector_t state_vector;

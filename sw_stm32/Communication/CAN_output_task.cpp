@@ -48,7 +48,7 @@ void CAN_task_runnable( void *)
 
       bool horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
 
-      CAN_output( observations, coordinates, state_vector, horizon_available);
+      CAN_output( observations, coordinates, state_vector, accuracy, horizon_available);
 
       --decimator_1_second;
       if( decimator_1_second < 1)

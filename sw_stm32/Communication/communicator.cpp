@@ -42,6 +42,7 @@
 #include "flexible_log_file_implementation.h"
 
 COMMON D_GNSS_coordinates_t coordinates;
+COMMON D_GNSS_accuracy_t accuracy;
 COMMON measurement_data_t observations;
 COMMON float3vector external_magnetometer;
 COMMON state_vector_t state_vector;
@@ -56,7 +57,7 @@ void signal_logger_event( uint32_t event)
   flight_event_queue.send( event, 1);
 }
 
-COMMON GNSS_type GNSS ( coordinates);
+COMMON GNSS_type GNSS ( coordinates, accuracy);
 
 COMMON Queue < communicator_command_t> communicator_command_queue(2);
 
@@ -167,6 +168,7 @@ communicator_runnable (void*)
   CAN_task.resume ();
 
   unsigned synchronizer_10Hz = 10; 	// re-sampling 100Hz -> 10Hz
+  unsigned D_GNSS_ACC_count = 10;
   unsigned GNSS_watchdog = 0;		// monitor incoming GNSS data rate
   unsigned GNSS_LED_count = 0;		// maintain GNSS LED
   unsigned old_system_state = 0; 	// trigger on system state changes
@@ -365,6 +367,14 @@ communicator_runnable (void*)
 		case SAT_FIX | SAT_HEADING:
 		  flex_file.append_record (
 		      D_GNSS_DATA, (uint32_t*) &coordinates, sizeof(D_GNSS_coordinates_t) / sizeof(uint32_t));
+
+		  --D_GNSS_ACC_count;
+		  if( D_GNSS_ACC_count == 0)
+		    {
+		      D_GNSS_ACC_count = 10;
+		      flex_file.append_record (
+			  D_GNSS_ACC, (uint32_t*) &accuracy, sizeof(D_GNSS_accuracy_t) / sizeof(uint32_t));
+		    }
 		  break;
 		case SAT_FIX_NONE: // need to log the GNSS status like number of visible satellites etc
 		  flex_file.append_record (
