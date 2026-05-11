@@ -344,12 +344,12 @@ bool write_EEPROM_dump( const char * file_path)
 
 	  if (PERSISTENT_DATA[index].id == HORIZON)
 	    {
-	      unsigned date_16bit = *(uint16_t*) &value;
-	      next = my_itoa (next, ((date_16bit >> 9) & 0x07ff) + 1980);
+	      uint32_t date = *(uint32_t*) &value;
+	      next = my_itoa (next, date >> 16);
 	      *next++ = '-';
-	      next = my_itoa (next, (date_16bit >> 5) & 0x0f);
+	      next = my_itoa (next, (date & 0x0f00) >> 8);
 	      *next++ = '-';
-	      next = my_itoa (next, date_16bit & 0x1f);
+	      next = my_itoa (next, date & 0x1f);
 	      newline (next);
 	    }
 	  else

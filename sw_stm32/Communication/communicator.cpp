@@ -73,7 +73,7 @@ void report_horizon_avalability( void)
 
   unsigned time = coordinates.year * 65536 + coordinates.month * 256 + coordinates.day;
 
-  if( time > horizon.u)
+  if( (time == 0) or (time > horizon.u))
 	update_system_state_clear( HORIZON_NOT_AVAILABLE);
   else
 	update_system_state_set( HORIZON_NOT_AVAILABLE);

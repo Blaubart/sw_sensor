@@ -141,19 +141,27 @@ bool read_init_file( const char * filename)
       if( persistent_parameter->id == HORIZON)
 	{
 	  unsigned year = atoi( position);
-	  if(( year < 1980) or (year > 2047))
+	  if(( year < 2000) or (year > 2100))
 	    continue;
 
-	  year -= 1980; // built-in offset
+	  position = strchr( position, '-');
+	  if( position ==  0)
+	    continue;
 
-	  unsigned month = atoi( position + 5);
+	  unsigned month = atoi( position);
 	  if( month > 12)
 	    continue;
-	  unsigned day = atoi( position + 8);
+
+	  position = strchr( position, '-');
+	  if( position ==  0)
+	    continue;
+
+	  unsigned day = atoi( position);
 	  if( day > 31)
 	    continue;
+
 	  union { float32_t f; uint32_t u;} new_value;
-	  new_value.u =  (year << 9) + (month << 5) + day;
+	  new_value.u =  (year << 16) + (month << 8) + day;
 
 	  union { float32_t f; uint32_t u;} old_value;
 	  bool fail = read_EEPROM_value( HORIZON, old_value.f);
