@@ -148,6 +148,8 @@ bool read_init_file( const char * filename)
 	  if( position ==  0)
 	    continue;
 
+	  ++position;
+
 	  unsigned month = atoi( position);
 	  if( month > 12)
 	    continue;
@@ -155,6 +157,8 @@ bool read_init_file( const char * filename)
 	  position = strchr( position, '-');
 	  if( position ==  0)
 	    continue;
+
+	  ++position;
 
 	  unsigned day = atoi( position);
 	  if( day > 31)

@@ -71,9 +71,9 @@ void report_horizon_avalability( void)
   union{ float f; unsigned u;} horizon;
   horizon.f = configuration (HORIZON);
 
-  unsigned time = coordinates.year * 65536 + coordinates.month * 256 + coordinates.day;
+  unsigned time = (coordinates.year + 2000) * 65536 + coordinates.month * 256 + coordinates.day;
 
-  if( (time == 0) or (time > horizon.u))
+  if( (coordinates.sat_fix_type == 0) or (time > horizon.u))
 	update_system_state_clear( HORIZON_NOT_AVAILABLE);
   else
 	update_system_state_set( HORIZON_NOT_AVAILABLE);
