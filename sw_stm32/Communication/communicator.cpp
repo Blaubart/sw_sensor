@@ -70,7 +70,10 @@ void report_horizon_avalability( void)
 {
   union{ float f; unsigned u;} horizon;
   horizon.f = configuration (HORIZON);
-  if( horizon.u  < (FAT_time >> 16))
+
+  unsigned time = coordinates.year * 65536 + coordinates.month * 256 + coordinates.day;
+
+  if( time > horizon.u)
 	update_system_state_clear( HORIZON_NOT_AVAILABLE);
   else
 	update_system_state_set( HORIZON_NOT_AVAILABLE);
@@ -101,7 +104,7 @@ communicator_runnable (void*)
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait ();
 
-  report_horizon_avalability ();
+  update_system_state_clear( HORIZON_NOT_AVAILABLE);
 
   organizer_t organizer;
   organizer.initialize_before_measurement ();

@@ -54,7 +54,8 @@ ROM EEPROM_PARAMETER_ID parameter_list[] =
 	ANT_BASELENGTH,
 	ANT_SLAVE_DOWN,
 	ANT_SLAVE_RIGHT,
-	VARIO_P_TC
+	VARIO_P_TC,
+	HORIZON
     };
 
 #define PARAMETER_LIST_LENGTH (sizeof( parameter_list) / sizeof(EEPROM_PARAMETER_ID))
