@@ -101,8 +101,6 @@ communicator_runnable (void*)
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait ();
 
-  int64_t time = getTime_usec();
-
   report_horizon_avalability ();
 
   organizer_t organizer;
@@ -155,8 +153,6 @@ communicator_runnable (void*)
 
   GNSS.clear_sat_fix_type ();
   GNSS_new_data_ready = false;
-
-  time = getTime_usec() - time;
 
   // the construction-process may be very slow and shall not wake the watchdog
   // now we can switch to our original priority
