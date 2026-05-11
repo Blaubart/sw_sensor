@@ -38,7 +38,6 @@ void CAN_task_runnable( void *)
 {
   suspend();
 
-  bool horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
   unsigned decimator_1_second=10;
 
   delay(5000); // allow data acquisition setup
@@ -46,6 +45,9 @@ void CAN_task_runnable( void *)
   while( true)
     {
       notify_take(); // synchronize with data acquisition
+
+      bool horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
+
       CAN_output( observations, coordinates, state_vector, horizon_available);
 
       --decimator_1_second;
