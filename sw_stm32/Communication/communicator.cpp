@@ -42,6 +42,9 @@
 #include "flexible_log_file_implementation.h"
 
 COMMON D_GNSS_coordinates_t coordinates;
+#if SUPPORT_D_GNSS_ACCURACY
+COMMON D_GNSS_accuracy_t accuracy;
+#endif
 COMMON measurement_data_t observations;
 COMMON float3vector external_magnetometer;
 COMMON state_vector_t state_vector;
@@ -56,7 +59,11 @@ void signal_logger_event( uint32_t event)
   flight_event_queue.send( event, 1);
 }
 
+#if SUPPORT_D_GNSS_ACCURACY
+COMMON GNSS_type GNSS ( coordinates, accuracy);
+#else
 COMMON GNSS_type GNSS ( coordinates);
+#endif
 
 COMMON Queue < communicator_command_t> communicator_command_queue(2);
 
@@ -68,7 +75,12 @@ static ROM bool FALSE=false;
 
 void report_horizon_avalability( void)
 {
-  if( configuration (HORIZON) )
+  union{ float f; unsigned u;} horizon;
+  horizon.f = configuration (HORIZON);
+
+  unsigned time = (coordinates.year + 2000) * 65536 + coordinates.month * 256 + coordinates.day;
+
+  if( (coordinates.sat_fix_type == 0) or (time > horizon.u))
 	update_system_state_clear( HORIZON_NOT_AVAILABLE);
   else
 	update_system_state_set( HORIZON_NOT_AVAILABLE);
@@ -99,9 +111,7 @@ communicator_runnable (void*)
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait ();
 
-  int64_t time = getTime_usec();
-
-  report_horizon_avalability ();
+  update_system_state_clear( HORIZON_NOT_AVAILABLE);
 
   organizer_t organizer;
   organizer.initialize_before_measurement ();
@@ -154,8 +164,6 @@ communicator_runnable (void*)
   GNSS.clear_sat_fix_type ();
   GNSS_new_data_ready = false;
 
-  time = getTime_usec() - time;
-
   // the construction-process may be very slow and shall not wake the watchdog
   // now we can switch to our original priority
   communicator_task.set_priority ( COMMUNICATOR_PRIORITY); // lift priority
@@ -166,6 +174,7 @@ communicator_runnable (void*)
   CAN_task.resume ();
 
   unsigned synchronizer_10Hz = 10; 	// re-sampling 100Hz -> 10Hz
+  unsigned D_GNSS_ACC_count = 10;
   unsigned GNSS_watchdog = 0;		// monitor incoming GNSS data rate
   unsigned GNSS_LED_count = 0;		// maintain GNSS LED
   unsigned old_system_state = 0; 	// trigger on system state changes
@@ -190,6 +199,7 @@ communicator_runnable (void*)
 	      have_first_GNSS_fix = true;
 	      organizer.update_magnetic_induction_data (coordinates.latitude,
 							coordinates.longitude);
+	      report_horizon_avalability();
 	    }
 
 	  GNSS_watchdog = 0;
@@ -363,6 +373,16 @@ communicator_runnable (void*)
 		case SAT_FIX | SAT_HEADING:
 		  flex_file.append_record (
 		      D_GNSS_DATA, (uint32_t*) &coordinates, sizeof(D_GNSS_coordinates_t) / sizeof(uint32_t));
+
+#if SUPPORT_D_GNSS_ACCURACY
+		  --D_GNSS_ACC_count;
+		  if( D_GNSS_ACC_count == 0)
+		    {
+		      D_GNSS_ACC_count = 10;
+		      flex_file.append_record (
+			  D_GNSS_ACC, (uint32_t*) &accuracy, sizeof(D_GNSS_accuracy_t) / sizeof(uint32_t));
+		    }
+#endif
 		  break;
 		case SAT_FIX_NONE: // need to log the GNSS status like number of visible satellites etc
 		  flex_file.append_record (

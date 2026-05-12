@@ -138,19 +138,59 @@ bool read_init_file( const char * filename)
       if( ! is_number_start( *position))
 	continue; // found some form of garbage
 
-      float value = my_atof( position);
-
-      if( persistent_parameter->is_an_angle)
+      if( persistent_parameter->id == HORIZON)
 	{
-	  value *= M_PI_F / 180.0;
-	  // map angle range
-	  while( value > M_PI_F)
-	    value -= M_PI_F * 2.0f;
-	  while( value < -M_PI_F)
-	    value += M_PI_F * 2.0f;
+	  unsigned year = atoi( position);
+	  if(( year < 2000) or (year > 2100))
+	    continue;
+
+	  position = strchr( position, '-');
+	  if( position ==  0)
+	    continue;
+
+	  ++position;
+
+	  unsigned month = atoi( position);
+	  if( month > 12)
+	    continue;
+
+	  position = strchr( position, '-');
+	  if( position ==  0)
+	    continue;
+
+	  ++position;
+
+	  unsigned day = atoi( position);
+	  if( day > 31)
+	    continue;
+
+	  union { float32_t f; uint32_t u;} new_value;
+	  new_value.u =  (year << 16) + (month << 8) + day;
+
+	  union { float32_t f; uint32_t u;} old_value;
+	  bool fail = read_EEPROM_value( HORIZON, old_value.f);
+	  if( (not fail) && (old_value.u > new_value.u)) // never accept earlier date
+	    continue;
+
+	  bool success = write_EEPROM_value( persistent_parameter->id, new_value.f);
+	  ASSERT( success);
 	}
-      bool success = write_EEPROM_value( persistent_parameter->id, value);
-      ASSERT( success);
+      else
+	{
+	  float value = my_atof( position);
+
+	  if( persistent_parameter->is_an_angle)
+	    {
+	      value *= M_PI_F / 180.0;
+	      // map angle range
+	      while( value > M_PI_F)
+		value -= M_PI_F * 2.0f;
+	      while( value < -M_PI_F)
+		value += M_PI_F * 2.0f;
+	      bool success = write_EEPROM_value( persistent_parameter->id, value);
+	      ASSERT( success);
+	    }
+	}
     }
 
   return true;

@@ -54,7 +54,8 @@ ROM EEPROM_PARAMETER_ID parameter_list[] =
 	ANT_BASELENGTH,
 	ANT_SLAVE_DOWN,
 	ANT_SLAVE_RIGHT,
-	VARIO_P_TC
+	VARIO_P_TC,
+	HORIZON
     };
 
 #define PARAMETER_LIST_LENGTH (sizeof( parameter_list) / sizeof(EEPROM_PARAMETER_ID))
@@ -107,6 +108,9 @@ bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
 	      case PITOT_SPAN:
 	      case QNH_OFFSET:
 		  communicator_command_queue.send( TUNE_PRESSURE_GAUGES, 1);
+		break;
+	      case HORIZON:
+		  communicator_command_queue.send( HORIZON_LOCK_CHANGED, 1);
 		break;
 	      default:
 		break;

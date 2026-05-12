@@ -329,30 +329,44 @@ bool write_EEPROM_dump( const char * file_path)
     }
   sha.update( (uint8_t *)buffer, next-buffer);
 
-  for( unsigned index = 0; index < PERSISTENT_DATA_ENTRIES; ++index)
+  for (unsigned index = 0; index < PERSISTENT_DATA_ENTRIES; ++index)
     {
       float value;
-      bool result = read_EEPROM_value( PERSISTENT_DATA[index].id, value);
-      if( result == HAL_OK)
+      bool result = read_EEPROM_value (PERSISTENT_DATA[index].id, value);
+      if (result == HAL_OK)
 	{
-	  if( PERSISTENT_DATA[index].is_an_angle)
+	  if (PERSISTENT_DATA[index].is_an_angle)
 	    value *= 180.0 / M_PI_F; // format it human readable
 
 	  next = buffer;
-	  append_string( next, PERSISTENT_DATA[index].mnemonic);
-	  append_string (next," = ");
-	  next = my_ftoa (next, value);
-	  newline(next);
+	  append_string (next, PERSISTENT_DATA[index].mnemonic);
+	  append_string (next, " = ");
 
-	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
-	  sha.update( (uint8_t *)buffer, next-buffer);
-	  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+	  if (PERSISTENT_DATA[index].id == HORIZON)
 	    {
-	      f_close(&fp);
+	      uint32_t date = *(uint32_t*) &value;
+	      next = my_itoa (next, date >> 16);
+	      *next++ = '-';
+	      next = my_itoa (next, (date & 0x0f00) >> 8);
+	      *next++ = '-';
+	      next = my_itoa (next, date & 0x1f);
+	      newline (next);
+	    }
+	  else
+	    {
+	      next = my_ftoa (next, value);
+	      newline (next);
+	    }
+
+	  fresult = f_write (&fp, buffer, next - buffer, (UINT*) &writtenBytes);
+	  sha.update ((uint8_t*) buffer, next - buffer);
+	  if ((fresult != FR_OK) || (writtenBytes != (next - buffer)))
+	    {
+	      f_close (&fp);
 	      return fresult; // give up ...
 	    }
 	}
-      }
+    }
 
       {
       float32_t mag_calib_param[4*3];
