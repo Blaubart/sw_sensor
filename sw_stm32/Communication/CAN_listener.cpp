@@ -109,6 +109,9 @@ bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
 	      case QNH_OFFSET:
 		  communicator_command_queue.send( TUNE_PRESSURE_GAUGES, 1);
 		break;
+	      case HORIZON:
+		  communicator_command_queue.send( HORIZON_LOCK_CHANGED, 1);
+		break;
 	      default:
 		break;
 	    }
