@@ -48,8 +48,11 @@ void CAN_task_runnable( void *)
 
       bool horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
 
+#if SUPPORT_D_GNSS_ACCURACY
       CAN_output( observations, coordinates, state_vector, accuracy, horizon_available);
-
+#else
+      CAN_output( observations, coordinates, state_vector, horizon_available);
+#endif
       --decimator_1_second;
       if( decimator_1_second < 1)
 	{

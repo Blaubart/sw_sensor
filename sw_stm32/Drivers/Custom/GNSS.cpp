@@ -57,12 +57,20 @@ void GNSS_data_lock( unsigned function)
     GNSS_data_guard.release();
 }
 
+#if SUPPORT_D_GNSS_ACCURACY
 GNSS_type::GNSS_type( D_GNSS_coordinates_t & coo, D_GNSS_accuracy_t &acc) :
 		coordinates( coo),
 		accuracy( acc),
 		fix_type(FIX_none),
 		num_SV(0)
 	{}
+#else
+GNSS_type::GNSS_type( D_GNSS_coordinates_t & coo) :
+		coordinates( coo),
+		fix_type(FIX_none),
+		num_SV(0)
+	{}
+#endif
 
 #if MEASURE_GNSS_REFRESH_TIME
 COMMON float delta_t;
@@ -159,12 +167,14 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	coordinates.relPosNED[EAST] =0.01f*(float)(p.relPosE) + 0.0001f * (float)(p.relPosHP_E);
 	coordinates.relPosNED[DOWN] =0.01f*(float)(p.relPosD) + 0.0001f * (float)(p.relPosHP_D);
 
+#if SUPPORT_D_GNSS_ACCURACY
 	decimate( accuracy.relPosAccN, p.accN * 0.0001f);
 	decimate( accuracy.relPosAccE, p.accE * 0.0001f);
 	decimate( accuracy.relPosAccD, p.accD * 0.0001f);
 	decimate( accuracy.relPosAccLen, p.acc_len * 0.0001f);
 	decimate( accuracy.relPosHeadingAcc, p.acc_heading * 1e-5f);
 	decimate( accuracy.relPosLength, p.relPoslength * 0.01f);
+#endif
 
 	// 0x337 on f9pf9h if OK; 0x137 on f9p f9h if OK
 	GNSS_Result res = ( (p.flags & 0x1ff) == 0x137) ? GNSS_HAVE_FIX : GNSS_NO_FIX;

@@ -42,7 +42,9 @@
 #include "flexible_log_file_implementation.h"
 
 COMMON D_GNSS_coordinates_t coordinates;
+#if SUPPORT_D_GNSS_ACCURACY
 COMMON D_GNSS_accuracy_t accuracy;
+#endif
 COMMON measurement_data_t observations;
 COMMON float3vector external_magnetometer;
 COMMON state_vector_t state_vector;
@@ -57,7 +59,11 @@ void signal_logger_event( uint32_t event)
   flight_event_queue.send( event, 1);
 }
 
+#if SUPPORT_D_GNSS_ACCURACY
 COMMON GNSS_type GNSS ( coordinates, accuracy);
+#else
+COMMON GNSS_type GNSS ( coordinates);
+#endif
 
 COMMON Queue < communicator_command_t> communicator_command_queue(2);
 
@@ -368,6 +374,7 @@ communicator_runnable (void*)
 		  flex_file.append_record (
 		      D_GNSS_DATA, (uint32_t*) &coordinates, sizeof(D_GNSS_coordinates_t) / sizeof(uint32_t));
 
+#if SUPPORT_D_GNSS_ACCURACY
 		  --D_GNSS_ACC_count;
 		  if( D_GNSS_ACC_count == 0)
 		    {
@@ -375,6 +382,7 @@ communicator_runnable (void*)
 		      flex_file.append_record (
 			  D_GNSS_ACC, (uint32_t*) &accuracy, sizeof(D_GNSS_accuracy_t) / sizeof(uint32_t));
 		    }
+#endif
 		  break;
 		case SAT_FIX_NONE: // need to log the GNSS status like number of visible satellites etc
 		  flex_file.append_record (
