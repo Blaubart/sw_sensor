@@ -187,9 +187,10 @@ bool read_init_file( const char * filename)
 		value -= M_PI_F * 2.0f;
 	      while( value < -M_PI_F)
 		value += M_PI_F * 2.0f;
-	      bool success = write_EEPROM_value( persistent_parameter->id, value);
-	      ASSERT( success);
 	    }
+
+	  bool success = write_EEPROM_value( persistent_parameter->id, value);
+	  ASSERT( success);
 	}
     }
 
