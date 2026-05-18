@@ -49,6 +49,11 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
   UINT written_bytes = 0;
   FRESULT fresult;
 
+#if MEASURE_WRITE_TIME
+  uint64_t time;
+  extern uint64_t getTime_usec(void);
+  #endif
+
   unsigned size_bytes = (second_part - buffer) * sizeof( uint32_t);
 
   if( status & WRITING_LOW)
@@ -56,7 +61,17 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
       ASSERT( not( status & FILLING_LOW));
 
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+
+#if MEASURE_WRITE_TIME
+      time = getTime_usec();
+#endif
+
       fresult = f_write( &out_file, (const char *)buffer, size_bytes, &written_bytes);
+
+#if MEASURE_WRITE_TIME
+      time = getTime_usec() - time;
+      signal_logger_event( DEBUGGER_DATA | time);
+#endif
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
 
 #if 0 // debug version

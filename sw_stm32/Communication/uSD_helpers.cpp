@@ -46,7 +46,7 @@ void sync_logger(void);
 extern  uint32_t UNIQUE_ID[4];
 extern SD_HandleTypeDef hsd;
 
-#define MEM_BUFSIZE 4096 // bytes
+#define MEM_BUFSIZE 16384 // bytes
 COMMON uint8_t __ALIGNED(32) mem_buffer[MEM_BUFSIZE];
 COMMON flexible_log_file_implementation_t flex_file(
     (uint32_t *)mem_buffer,

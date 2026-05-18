@@ -29,7 +29,8 @@
 #include "git-commit-version.h"
 
 #define RUN_FLASH_WRITE_TESTER		0
-#define ANALYZE_WRITE_PERFORMANCE	1
+#define ANALYZE_WRITE_PERFORMANCE	0
+#define MEASURE_WRITE_TIME		0
 
 #define USE_HARDWARE_EEPROM		1
 #define MEASURE_GNSS_REFRESH_TIME	0
