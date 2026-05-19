@@ -228,7 +228,8 @@ static bool import_legacy_EEPROM_data( uint32_t * flash_address, unsigned size_w
 	else
 	  result = false;
 
-	result &= (0 != permanent_data_file.store_data ( parameter->id, 1, &value));
+	if( parameter->id != HORIZON)
+	  result &= (0 != permanent_data_file.store_data ( parameter->id, 1, &value));
     }
   return result;
 }
