@@ -76,7 +76,7 @@ char * format_date_time( char * target, const D_GNSS_coordinates_t &coordinates)
 extern RestrictedTask uSD_handler_task; // will come downwards ...
 
 //!< write crash dump file and force MPU reset via watchdog
-void write_crash_dump( void)
+void write_crash_dump( bool is_crash)
 {
   uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
 
@@ -94,7 +94,7 @@ void write_crash_dump( void)
 #endif
 
   next = format_date_time( buffer, coordinates);
-  append_string (next, ".CRASHDUMP");
+  append_string (next, is_crash ? ".CRASHDUMP" : ".RESET");
 
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)

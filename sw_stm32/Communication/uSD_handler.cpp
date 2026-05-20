@@ -154,8 +154,8 @@ restart:
     while( 1)
 	{
 	notify_take (true); // wait for synchronization by crash detection
-	if( crashfile && ! user_initiated_reset)
-	  write_crash_dump();
+	if( crashfile)
+	  write_crash_dump( user_initiated_reset);
 	}
 
   char out_filename[30];
@@ -163,8 +163,8 @@ restart:
   // wait until a GNSS timestamp is available.
   while ( coordinates.sat_fix_type == 0)
     {
-      if( crashfile && ! user_initiated_reset)
-	  write_crash_dump();
+	if( crashfile)
+	  write_crash_dump( user_initiated_reset);
       delay (100);
     }
 
@@ -195,8 +195,8 @@ restart:
 	  while( true)
 	    {
 		notify_take (true); // wait for synchronization by crash detection
-		if( crashfile && ! user_initiated_reset)
-		  write_crash_dump();
+		if( crashfile)
+		  write_crash_dump( user_initiated_reset);
 	    }
 	}
 
@@ -209,10 +209,10 @@ restart:
 	{
 	  notify_take (true); // wait for synchronization by from communicator OR by the crash detection mechanism
 
-	  if( crashfile && ! user_initiated_reset)
+	  if( crashfile)
 	    {
 	      flex_file.close();
-	      write_crash_dump();
+	      write_crash_dump( user_initiated_reset);
 	    }
 
 	  success = flex_file.flush_buffer();
@@ -230,8 +230,8 @@ restart:
 	      while( true)
 		{
 		notify_take (true); // wait for synchronization by crash detection
-		if( crashfile && ! user_initiated_reset)
-		  write_crash_dump();
+		if( crashfile)
+		  write_crash_dump( user_initiated_reset);
 		}
 	      }
 
