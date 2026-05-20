@@ -98,6 +98,8 @@ void report_horizon_avalability( void)
 	update_system_state_clear( HORIZON_NOT_AVAILABLE);
 	permanent_data_file.store_data( HORIZON, 1, &year_2000,  true);
     }
+  else
+	update_system_state_set( HORIZON_NOT_AVAILABLE);
 }
 
 static ROM TaskParameters_t usart_3_task_param =
