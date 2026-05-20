@@ -72,16 +72,32 @@ extern RestrictedTask communicator_task;
 
 static ROM bool TRUE=true;
 static ROM bool FALSE=false;
+static ROM float year_2000 = 3.12969516e-34f;
 
 void report_horizon_avalability( void)
 {
   union{ float f; unsigned u;} horizon;
   horizon.f = configuration (HORIZON);
 
-  unsigned time = (coordinates.year + 2000) * 65536 + coordinates.month * 256 + coordinates.day;
-
-  if( (coordinates.sat_fix_type == 0) or (time > horizon.u))
+  if( horizon.u < ( 2000 * 65536 + 256 + 2 )) // default data set in configuration
+    {
 	update_system_state_clear( HORIZON_NOT_AVAILABLE);
+	return;
+    }
+
+  if( coordinates.sat_fix_type == 0) // no date available
+    {
+	update_system_state_set( HORIZON_NOT_AVAILABLE);
+	return;
+    }
+
+  unsigned date = (coordinates.year + 2000) * 65536 + coordinates.month * 256 + coordinates.day;
+
+  if( date > horizon.u) // horizon blocking has expired
+    {
+	update_system_state_clear( HORIZON_NOT_AVAILABLE);
+	permanent_data_file.store_data( HORIZON, 1, &year_2000,  true);
+    }
   else
 	update_system_state_set( HORIZON_NOT_AVAILABLE);
 }
@@ -111,7 +127,7 @@ communicator_runnable (void*)
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait ();
 
-  update_system_state_clear( HORIZON_NOT_AVAILABLE);
+  report_horizon_avalability();
 
   organizer_t organizer;
   organizer.initialize_before_measurement ();
