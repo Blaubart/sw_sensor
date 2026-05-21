@@ -10,7 +10,7 @@
 - Static pressure 
 - Differential pressure
 - CAN interface
-- Bluetooth via HM19 (HW-1.0)  ESP32 (HW-2.0)
+- Bluetooth ESP32
 - RS232 NMEA output channels
 
 # How to use it
@@ -50,10 +50,9 @@ Use the STM32CubeProgrammer to flash the binary to the STM32 micro-controller.
 - put a larus_sensor_config.ini file (template in configuration/) in the sd cards root directory. Adjust the parameters as described in configuration/README.md
 Initially the heading may be inaccurate as the magnetic calibration algorithm needs some time in the air to find the exact calibration. 
 A 30 minutes flight with some right and left turns should be sufficient to calibrate the compass module. 
-- Optionally: Create a directory with the name "logger" to enable logging of all measurement data with 100Hz
-- Optionally: Create a directory with the name "magnetic" to enable the logging of magnetic calibration events. 
-There should be a few of these events during the calibration process. 
-If you observe frequent additional events you probabely have moving ferromagnetic parts in the vicinity of the magnetometer.
+- Optionally: Create a directory with the name "logger" to enable logging of all measurement data with 100Hz via [.lrsx](https://github.com/larus-breeze/doc_larus/blob/master/documentation/LRSX_log_file_format.md) files. 
+- Optionally: Create a directory with the name "eeprom" to enable the creation of cleartext eeprom dumps including the installed firmware version and hardware id. 
+
 
 ### Additional developer options
 - Put an empty file with the name: "sensor.readings" in order to switch the serial output format from Larus NMEA syntax to pure sensor raw data values.
