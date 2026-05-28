@@ -36,6 +36,8 @@
 #include "system_state.h"
 #include "sensor_dump.h"
 #include "uSD_handler.h"
+#include "git-commit-version.h"
+#include <stdio.h>
 
 COMMON string_buffer_t __ALIGNED( sizeof(string_buffer_t)) NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
@@ -138,6 +140,40 @@ re_initialize: // in case of USART hangup
       }
       NMEA_buf.length = next - NMEA_buf.string;
 
+// Send firmware version periodically so OpenSoar will receive it after reconnect
+static unsigned version_counter = 0;
+
+if (++version_counter >= 10)   // bei 1 Hz NMEA ca. alle 10 Sekunden
+{
+    version_counter = 0;
+
+    char version[32];
+    const char *src = GIT_TAG_INFO;
+
+    int i = 0;
+    while (src[i] != '\0' && src[i] != '-' && i < (int)sizeof(version) - 1) {
+        version[i] = src[i];
+        i++;
+    }
+    version[i] = '\0';
+
+    int start = NMEA_buf.length;
+
+    NMEA_buf.length += snprintf(NMEA_buf.string + NMEA_buf.length,
+                                sizeof(NMEA_buf.string) - NMEA_buf.length,
+                                "$PLARF,%s*",
+                                version);
+
+    uint8_t cs = 0;
+    for (int j = start + 1; NMEA_buf.string[j] != '*'; j++) {
+        cs ^= (uint8_t)NMEA_buf.string[j];
+    }
+
+    NMEA_buf.length += snprintf(NMEA_buf.string + NMEA_buf.length,
+                                sizeof(NMEA_buf.string) - NMEA_buf.length,
+                                "%02X\r\n",
+                                cs);
+}
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);

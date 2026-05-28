@@ -27,6 +27,8 @@
 #include "stm32f407xx.h"
 #include "emergency.h"
 #include "embedded_memory.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 void sync_logger(void );
 
@@ -267,8 +269,6 @@ void illegal_interrupt_vector_hook(void)
       " handler4u_address_const: .word analyze_fault_stack	       \n"
   );
 }
-
-void vTaskSuspend(uint32_t);
 
 void vApplicationReturnFromTaskProcedureHook( void)
 {
