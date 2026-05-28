@@ -26,6 +26,7 @@
 #include "CAN_output.h"
 #include "communicator.h"
 #include "system_state.h"
+//#include "ambient_sensor_state.h"
 
 COMMON Queue <CANpacket> CAN_pipeline( 5);
 
@@ -57,7 +58,7 @@ void CAN_task_runnable( void *)
       if( decimator_1_second < 1)
 	{
 	  decimator_1_second=10;
-	  CAN_heartbeat();
+	  //CAN_heartbeat(false);
 	}
 
       CANpacket p;

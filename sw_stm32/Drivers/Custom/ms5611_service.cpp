@@ -30,6 +30,7 @@
 #include "common.h"
 #include "communicator.h"
 #include "system_state.h"
+#include "SHT35.h"
 
 #if RUN_MS5611_MODULE == 1
 
@@ -47,6 +48,7 @@ void getPressure (void*)
 
       MS5611 ms5611_static (0xEE);
       bool static_ms5611_available = false;
+      bool sht35_available = false;
 
       static_ms5611_available = ms5611_static.initialize ();
       if (static_ms5611_available)
@@ -56,6 +58,8 @@ void getPressure (void*)
 	  delay( 1000);
 	  continue; // restart this task
 	}
+	
+      sht35_available = SHT35_init();
 
       for( synchronous_timer t (10); true; t.sync()) // measurement loop
 	{
@@ -74,6 +78,23 @@ void getPressure (void*)
 	      observations.static_pressure = ms5611_static.get_pressure ();
 	      observations.static_sensor_temperature =
 		  ms5611_static.get_temperature ();
+
+	      float sht35_temperature = 0.0f;
+	      float sht35_humidity = 0.0f;
+
+	      if (sht35_available && SHT35_read(sht35_temperature, sht35_humidity))
+		{
+		  observations.ambient_sensor_available = true;
+		  observations.ambient_temperature = sht35_temperature;
+		  observations.ambient_humidity = sht35_humidity;
+		}
+	      else
+		{
+		  observations.ambient_sensor_available = false;
+		  observations.ambient_temperature =
+		      observations.static_sensor_temperature;
+		  observations.ambient_humidity = NAN;
+		}
 	    }
 	}
     }
